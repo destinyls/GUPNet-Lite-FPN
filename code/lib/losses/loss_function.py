@@ -73,6 +73,7 @@ class GupnetLoss(nn.Module):
 
     def compute_segmentation_loss(self, input, target):
         input['heatmap'] = torch.clamp(input['heatmap'].sigmoid_(), min=1e-4, max=1 - 1e-4)
+
         loss = focal_loss(input['heatmap'], target['heatmap'])
         self.stat['seg_loss'] = loss
         return loss

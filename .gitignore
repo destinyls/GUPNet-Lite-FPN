@@ -1,3 +1,6 @@
 code/outputs/
 __pycache__/
 *.pyc
+code/log/
+*.out
+

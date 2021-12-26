@@ -15,8 +15,8 @@ dataset:
 
 model:
   type: 'gupnet'
-  backbone: 'dla34'
-  neck: 'DLAUp'
+  backbone: 'resnet18'
+  neck: 'resnet18'
 
 optimizer:
   type: 'adam'
@@ -34,7 +34,7 @@ trainer:
   save_frequency: 10 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)
   log_dir: 'log'
-  output_dir: "eval_metrics_R40_007nd"
+  output_dir: "eval_metrics_R40_ResNet18_003nd"
   #resume_model: '...'  
 tester:
   threshold: 0.2  # confidence filter

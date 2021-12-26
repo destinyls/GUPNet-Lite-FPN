@@ -109,6 +109,8 @@ class ResNet(nn.Module):
     def __init__(self, block, num_blocks):
         super().__init__()
         self.in_planes = 64
+        self.deconv_with_bias = False
+        self.channels = [16, 32, 64, 128, 256, 512]
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
@@ -119,6 +121,11 @@ class ResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], 2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], 2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], 2)
+
+        # used for deconv layers
+        self.deconv_layers_1 = self._make_deconv_layer(256, 4)
+        self.deconv_layers_2 = self._make_deconv_layer(128, 4)
+        self.deconv_layers_3 = self._make_deconv_layer(64, 4)
 
 
     def _make_layer(self, block, planes, blocks, stride=1):
@@ -139,18 +146,79 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
+    
+    def _get_deconv_cfg(self, deconv_kernel):
+        if deconv_kernel == 4:
+            padding = 1
+            output_padding = 0
+        elif deconv_kernel == 3:
+            padding = 1
+            output_padding = 1
+        elif deconv_kernel == 2:
+            padding = 0
+            output_padding = 0
+
+        return deconv_kernel, padding, output_padding
+
+
+    def _make_deconv_layer(self, num_filters, num_kernels):
+        layers = []
+        kernel, padding, output_padding = self._get_deconv_cfg(num_kernels)
+        planes = num_filters
+        layers.append(
+            nn.ConvTranspose2d(
+                in_channels=self.in_planes,
+                out_channels=planes,
+                kernel_size=kernel,
+                stride=2,
+                padding=padding,
+                output_padding=output_padding,
+                bias=self.deconv_with_bias))
+        layers.append(nn.BatchNorm2d(planes))
+        layers.append(nn.ReLU(inplace=True))
+        self.in_planes = planes
+
+        return nn.Sequential(*layers)
 
     def forward(self, x):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
+        out = self.maxpool(out)
 
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
 
-        return out
+        up_level_16 = self.deconv_layers_1(out)
+        up_level_8 = self.deconv_layers_2(up_level_16)
+        up_level_4 = self.deconv_layers_3(up_level_8)
+
+        return [up_level_4, up_level_8, up_level_16]
+
+
+    def init_deconv(self, layer):
+        for _, m in layer.named_modules():
+            if isinstance(m, nn.ConvTranspose2d):
+                # print('=> init {}.weight as normal(0, 0.001)'.format(name))
+                # print('=> init {}.bias as 0'.format(name))
+                nn.init.normal_(m.weight, std=0.001)
+                if self.deconv_with_bias:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                # print('=> init {}.weight as 1'.format(name))
+                # print('=> init {}.bias as 0'.format(name))
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    
+    def init_weights(self, pretrained=True):
+        if pretrained:
+            # print('=> init resnet deconv weights from normal distribution')
+            self.init_deconv(self.deconv_layers_1)
+            self.init_deconv(self.deconv_layers_2)
+            self.init_deconv(self.deconv_layers_3)
 
 
 def resnet18(pretrained=False, **kwargs):
@@ -163,6 +231,7 @@ def resnet18(pretrained=False, **kwargs):
     if pretrained:
         print('===> loading imagenet pretrained model.')
         model.load_state_dict(model_zoo.load_url(model_urls['resnet18']), strict=False)
+        model.init_weights()
     return model
 
 
@@ -176,6 +245,7 @@ def resnet34(pretrained=False, **kwargs):
     if pretrained:
         print('===> loading imagenet pretrained model.')
         model.load_state_dict(model_zoo.load_url(model_urls['resnet34']), strict=False)
+        model.init_weights()
     return model
 
 
@@ -189,6 +259,7 @@ def resnet50(pretrained=False, **kwargs):
     if pretrained:
         print('===> loading imagenet pretrained model.')
         model.load_state_dict(model_zoo.load_url(model_urls['resnet50']), strict=False)
+        model.init_weights()
     return model
 
 
@@ -202,6 +273,7 @@ def resnet101(pretrained=False, **kwargs):
     if pretrained:
         print('===> loading imagenet pretrained model.')
         model.load_state_dict(model_zoo.load_url(model_urls['resnet101']), strict=False)
+        model.init_weights()
     return model
 
 
@@ -215,6 +287,7 @@ def resnet152(pretrained=False, **kwargs):
     if pretrained:
         print('===> loading imagenet pretrained model.')
         model.load_state_dict(model_zoo.load_url(model_urls['resnet152']), strict=False)
+        model.init_weights()
     return model
 
 
