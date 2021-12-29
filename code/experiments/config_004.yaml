@@ -34,7 +34,7 @@ trainer:
   save_frequency: 10 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)
   log_dir: 'log'
-  output_dir: "Lite_FPN_eval_metrics_R40_004nd"
+  output_dir: "Lite-FPN_8_16_eval_metrics_R40_DLA-34_3x3_002nd"
   #resume_model: '...'  
 tester:
   threshold: 0.2  # confidence filter

@@ -71,19 +71,19 @@ class GUPNet(nn.Module):
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
 
 
-        self.depth = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num , self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.depth = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num+320 , self.head_conv, kernel_size=3, padding=0, bias=True),
                                      nn.BatchNorm2d(self.head_conv),
                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
-        self.offset_3d = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.offset_3d = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num+320, self.head_conv, kernel_size=3, padding=0, bias=True),
                                      nn.BatchNorm2d(self.head_conv),
                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
-        self.size_3d = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.size_3d = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num+320, self.head_conv, kernel_size=3, padding=0, bias=True),
                                      nn.BatchNorm2d(self.head_conv),
                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 4, kernel_size=1, stride=1, padding=0, bias=True))
-        self.heading = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.heading = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num+320, self.head_conv, kernel_size=3, padding=0, bias=True),
                                      nn.BatchNorm2d(self.head_conv),
                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 24, kernel_size=1, stride=1, padding=0, bias=True))
@@ -141,9 +141,9 @@ class GUPNet(nn.Module):
             box2d_masked_8 = torch.cat([roi_id, box2d_masked_8], dim=-1)
             box2d_masked_16 = torch.cat([roi_id, box2d_masked_16], dim=-1)
 
-            roi_feature_masked = roi_align(feats[0],box2d_masked,[7,7])
-            roi_feature_masked_8 = roi_align(feats[1],box2d_masked_8,[7,7])
-            roi_feature_masked_16 = roi_align(feats[2],box2d_masked_16,[7,7])
+            roi_feature_masked = roi_align(feats[0],box2d_masked,[3,3])
+            roi_feature_masked_8 = roi_align(feats[1],box2d_masked_8,[3,3])
+            roi_feature_masked_16 = roi_align(feats[2],box2d_masked_16,[3,3])
 
             #get coord range of each roi
             coord_ranges_mask2d = coord_ranges[box2d_masked[:,0].long()]
@@ -160,15 +160,15 @@ class GUPNet(nn.Module):
                                           self.project2rect(roi_calibs,torch.cat([box2d_masked[:,3:5],torch.ones([num_masked_bin,1]).to(device_id)],-1))[:,:2]],-1)
             coords_in_camera_coord = torch.cat([box2d_masked[:,0:1],coords_in_camera_coord],-1)
             #generate coord maps
-            coord_maps = torch.cat([torch.cat([coords_in_camera_coord[:,1:2]+i*(coords_in_camera_coord[:,3:4]-coords_in_camera_coord[:,1:2])/6 for i in range(7)],-1).unsqueeze(1).repeat([1,7,1]).unsqueeze(1),
-                                torch.cat([coords_in_camera_coord[:,2:3]+i*(coords_in_camera_coord[:,4:5]-coords_in_camera_coord[:,2:3])/6 for i in range(7)],-1).unsqueeze(2).repeat([1,1,7]).unsqueeze(1)],1)
+            coord_maps = torch.cat([torch.cat([coords_in_camera_coord[:,1:2]+i*(coords_in_camera_coord[:,3:4]-coords_in_camera_coord[:,1:2])/6 for i in range(3)],-1).unsqueeze(1).repeat([1,3,1]).unsqueeze(1),
+                                    torch.cat([coords_in_camera_coord[:,2:3]+i*(coords_in_camera_coord[:,4:5]-coords_in_camera_coord[:,2:3])/6 for i in range(3)],-1).unsqueeze(2).repeat([1,1,3]).unsqueeze(1)],1)
 
             #concatenate coord maps with feature maps in the channel dim
             cls_hots = torch.zeros(num_masked_bin,self.cls_num).to(device_id)
             cls_hots[torch.arange(num_masked_bin).to(device_id),cls_ids[mask].long()] = 1.0
-            
-            roi_feature_masked = torch.cat([roi_feature_masked,coord_maps,cls_hots.unsqueeze(-1).unsqueeze(-1).repeat([1,1,7,7])],1)
-            # roi_feature_masked = torch.cat([roi_feature_masked,roi_feature_masked_8,roi_feature_masked_16, coord_maps,cls_hots.unsqueeze(-1).unsqueeze(-1).repeat([1,1,7,7])],1)
+
+            # roi_feature_masked = torch.cat([roi_feature_masked,coord_maps,cls_hots.unsqueeze(-1).unsqueeze(-1).repeat([1,1,3,3])],1)
+            roi_feature_masked = torch.cat([roi_feature_masked_8,roi_feature_masked_16, coord_maps,cls_hots.unsqueeze(-1).unsqueeze(-1).repeat([1,1,3,3])],1)
 
             #compute heights of projected objects
             box2d_height = torch.clamp(box2d_masked[:,4]-box2d_masked[:,2],min=1.0)
@@ -181,7 +181,8 @@ class GUPNet(nn.Module):
             size_3d = (self.mean_size[cls_ids[mask].long()]+size3d_offset)
             depth_geo = size_3d[:,0]/box2d_height.squeeze()*roi_calibs[:,0,0]
             
-            depth_net_out = self.depth(roi_feature_masked)[:,:,0,0]
+            depth_net_out = self.depth(roi_feature_masked)
+            depth_net_out = depth_net_out[:,:,0,0]
             depth_geo_log_std = (h3d_log_std.squeeze()+2*(roi_calibs[:,0,0].log()-box2d_height.log())).unsqueeze(-1)
             depth_net_log_std = torch.logsumexp(torch.cat([depth_net_out[:,1:2],depth_geo_log_std],-1),-1,keepdim=True)
 
