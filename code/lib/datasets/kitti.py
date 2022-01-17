@@ -147,6 +147,7 @@ class KITTI(data.Dataset):
             src_size_3d = np.zeros((self.max_objs, 3), dtype=np.float32)
             size_3d = np.zeros((self.max_objs, 3), dtype=np.float32)
             offset_3d = np.zeros((self.max_objs, 2), dtype=np.float32)
+            proj_3d = np.zeros((self.max_objs, 2), dtype=np.float32)
             height2d = np.zeros((self.max_objs, 1), dtype=np.float32)
             cls_ids = np.zeros((self.max_objs), dtype=np.int64)
             indices = np.zeros((self.max_objs), dtype=np.int64)
@@ -214,6 +215,7 @@ class KITTI(data.Dataset):
     
                 # encoding 3d offset & size_3d
                 offset_3d[i] = center_3d - center_heatmap
+                proj_3d[i] = center_heatmap
                 src_size_3d[i] = np.array([objects[i].h, objects[i].w, objects[i].l], dtype=np.float32)
                 mean_size = self.cls_mean_size[self.cls2id[objects[i].cls_type]]
                 size_3d[i] = src_size_3d[i] - mean_size
@@ -226,6 +228,7 @@ class KITTI(data.Dataset):
                    'heatmap': heatmap,
                    'offset_2d': offset_2d,
                    'indices': indices,
+                   'proj_3d': proj_3d,
                    'size_3d': size_3d,
                    'offset_3d': offset_3d,
                    'heading_bin': heading_bin,
