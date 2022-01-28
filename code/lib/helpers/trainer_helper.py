@@ -191,22 +191,24 @@ class Trainer(object):
                 results.update(dets)
                 progress_bar.update()
             progress_bar.close()
-        self.save_results(results)
+        self.save_results(results, os.path.join(self.cfg_train['output_dir'], 'epoch_{:06d}'.format(epoch)))
 
         gt_label_path = "/root/Dataset/kitti_dataset/training/label_2/"
         imageset_txt = "/root/Dataset/kitti_dataset/ImageSets/val.txt"
-        pred_label_path = os.path.join('./outputs', 'data')
-        evaluation_path = os.path.join('./outputs', self.cfg_train['output_dir'])
-        if not os.path.exists(evaluation_path):
-            os.makedirs(evaluation_path)
-        result, ret_dict = evaluate_python(label_path=gt_label_path, 
-                                            result_path=pred_label_path,
-                                            label_split_file=imageset_txt,
-                                            current_class=["Car", "Pedestrian", "Cyclist"],
-                                            metric='R40')
-        mAP_3d_moderate = ret_dict['Car_3d_0.70/moderate']
-        with open(os.path.join(evaluation_path, 'epoch_result_' + '{:07d}_{}.txt'.format(epoch, round(mAP_3d_moderate, 2))), "w") as f:
-            f.write(result)
+        pred_label_path = os.path.join(self.cfg_train['output_dir'], 'epoch_{:06d}'.format(epoch), 'data')
+        
+        for metric in ["R11", "R40"]:
+            evaluation_path = os.path.join(self.cfg_train['output_dir'], metric)
+            if not os.path.exists(evaluation_path):
+                os.makedirs(evaluation_path)
+            result, ret_dict = evaluate_python(label_path=gt_label_path, 
+                                                result_path=pred_label_path,
+                                                label_split_file=imageset_txt,
+                                                current_class=["Car", "Pedestrian", "Cyclist"],
+                                                metric=metric)
+            mAP_3d_moderate = ret_dict['Car_3d_0.70/moderate']
+            with open(os.path.join(evaluation_path, 'epoch_result_' + '{:07d}_{}.txt'.format(epoch, round(mAP_3d_moderate, 2))), "w") as f:
+                f.write(result)
                 
     def save_results(self, results, output_dir='./outputs'):
         output_dir = os.path.join(output_dir, 'data')
