@@ -2,8 +2,8 @@ random_seed: 444
 
 dataset:
   type: 'kitti'
-  root_dir: '/root/GUPNet/datasets'
-  batch_size: 16
+  root_dir: '/root/Dataset/kitti_dataset'
+  batch_size: 8
   class_merging: False
   use_dontcare: False
   use_3d_center: True
@@ -15,8 +15,8 @@ dataset:
 
 model:
   type: 'gupnet'
-  backbone: 'dla34'
-  neck: 'DLAUp'
+  backbone: 'Swin_T'
+  neck: 'SwinUp'
 
 optimizer:
   type: 'adam'
@@ -32,9 +32,10 @@ trainer:
   max_epoch: 200
   eval_frequency: 5 # evaluation interval (in epoch)
   save_frequency: 10 # checkpoint save interval (in epoch)
-  disp_frequency: 5 # display interval (in batch)
+  disp_frequency: 10 # display interval (in batch)
   log_dir: 'log'
-  output_dir: "eval_metrics_R40_005nd"
+  
+  output_dir: "GUPNet_Swin_T_Scratch_001nd"
   #resume_model: '...'  
 tester:
   threshold: 0.2  # confidence filter

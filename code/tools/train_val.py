@@ -48,7 +48,7 @@ def main():
     train_loader, val_loader, test_loader = build_dataloader(cfg['dataset'])
 
     # build model
-    model = build_model(cfg['model'],train_loader.dataset.cls_mean_size)
+    model = build_model(cfg['model'], train_loader.dataset.cls_mean_size)
 
     # evaluation mode
     if args.evaluate:

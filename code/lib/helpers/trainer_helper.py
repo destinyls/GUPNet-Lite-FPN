@@ -3,6 +3,8 @@ import tqdm
 
 import torch
 import torch.nn as nn
+import torch.distributed as dist
+
 import numpy as np
 import pdb
 from lib.helpers.save_helper import get_checkpoint_state
@@ -12,6 +14,23 @@ from lib.losses.loss_function import GupnetLoss,Hierarchical_Task_Learning
 from lib.helpers.decode_helper import extract_dets_from_outputs
 from lib.helpers.decode_helper import decode_detections
 from lib.evaluation import evaluate_python
+
+def get_world_size():
+    if not dist.is_available():
+        return 1
+    if not dist.is_initialized():
+        return 1
+    return dist.get_world_size()
+
+def get_rank():
+    if not dist.is_available():
+        return 0
+    if not dist.is_initialized():
+        return 0
+    return dist.get_rank()
+
+def is_main_process():
+    return get_rank() == 0
 
 class Trainer(object):
     def __init__(self,
@@ -73,9 +92,10 @@ class Trainer(object):
             else:
                 self.lr_scheduler.step()
             
-            if (self.epoch % self.cfg_train['eval_frequency']) == 0:
-                self.logger.info('------ EVAL EPOCH %03d ------' % (self.epoch))
-                self.eval_one_epoch(epoch)
+            if is_main_process():
+                if (self.epoch % self.cfg_train['eval_frequency']) == 0:
+                    self.logger.info('------ EVAL EPOCH %03d ------' % (self.epoch))
+                    self.eval_one_epoch(epoch)
 
             # save trained model
             if (self.epoch % self.cfg_train['save_frequency']) == 0:
