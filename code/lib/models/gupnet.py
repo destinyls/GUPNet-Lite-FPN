@@ -7,7 +7,6 @@ from lib.backbones.dlaup import DLAUp
 from lib.backbones.dlaup import DLAUpv2
 from lib.backbones.swin_transformer import Swin_T
 from lib.backbones.resnet import ResNet18, ResNet50
-from lib.backbones.fpn import FPN, Swin_T_FPN, ResNet50_FPN
 from lib.backbones.deconv_up import DeconvUp
 
 import torchvision.ops.roi_align as roi_align
@@ -61,36 +60,35 @@ class GUPNet(nn.Module):
             self.first_level = int(np.log2(downsample))
             scales = [2 ** i for i in range(len(channels[self.first_level:]))]
             self.feat_up = globals()[neck](channels[self.first_level:], scales_list=scales) 
-        elif "FPN" in neck:
-            self.feat_up = globals()[neck](num_outs=5)
+            neck_channels = channels[self.first_level]
         else:
-            self.feat_up = globals()[neck](input_channels=256)
+            self.feat_up = globals()[neck](input_channels=768)
+            neck_channels = self.feat_up.channels
         
         # initialize the head of pipeline, according to heads setting.
-        self.heatmap = nn.Sequential(nn.Conv2d(256, self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.heatmap = nn.Sequential(nn.Conv2d(neck_channels, self.head_conv, kernel_size=3, padding=1, bias=True),
                                      nn.ReLU(inplace=True),
                                      nn.Conv2d(self.head_conv, 3, kernel_size=1, stride=1, padding=0, bias=True))
-        self.offset_2d = nn.Sequential(nn.Conv2d(256, self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.offset_2d = nn.Sequential(nn.Conv2d(neck_channels, self.head_conv, kernel_size=3, padding=1, bias=True),
                                      nn.ReLU(inplace=True),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
-        self.size_2d = nn.Sequential(nn.Conv2d(256, self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.size_2d = nn.Sequential(nn.Conv2d(neck_channels, self.head_conv, kernel_size=3, padding=1, bias=True),
                                      nn.ReLU(inplace=True),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
 
-
-        self.depth = nn.Sequential(nn.Conv2d(256+2+self.cls_num , self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.depth = nn.Sequential(nn.Conv2d(neck_channels+2+self.cls_num , self.head_conv, kernel_size=3, padding=1, bias=True),
                                      nn.BatchNorm2d(self.head_conv),
                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
-        self.offset_3d = nn.Sequential(nn.Conv2d(256+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.offset_3d = nn.Sequential(nn.Conv2d(neck_channels+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
                                      nn.BatchNorm2d(self.head_conv),
                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
-        self.size_3d = nn.Sequential(nn.Conv2d(256+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.size_3d = nn.Sequential(nn.Conv2d(neck_channels+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
                                      nn.BatchNorm2d(self.head_conv),
                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 4, kernel_size=1, stride=1, padding=0, bias=True))
-        self.heading = nn.Sequential(nn.Conv2d(256+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
+        self.heading = nn.Sequential(nn.Conv2d(neck_channels+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
                                      nn.BatchNorm2d(self.head_conv),
                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 24, kernel_size=1, stride=1, padding=0, bias=True))
@@ -107,8 +105,7 @@ class GUPNet(nn.Module):
     def forward(self, input, coord_ranges,calibs, targets=None, K=50, mode='train'):
         device_id = input.device
         BATCH_SIZE = input.size(0)
-        feats = self.backbone(input)
-        
+        feats = self.backbone(input)        
         # feats = self.feat_up(feats[self.first_level:])
         feats = self.feat_up(feats[-1])
         '''

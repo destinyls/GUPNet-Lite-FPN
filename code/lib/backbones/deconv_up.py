@@ -10,13 +10,14 @@ class DeconvUp(nn.Module):
     def __init__(self, input_channels):
         super(DeconvUp, self).__init__()
         # used for deconv layers
-        self.inplanes_t = 512
+        self.inplanes = input_channels
         self.deconv_with_bias = False
+        self.channels = 64
         # used for deconv layers
 
         self.deconv_layers_1 = self._make_deconv_layer(256, 4)
-        self.deconv_layers_2 = self._make_deconv_layer(256, 4)
-        self.deconv_layers_3 = self._make_deconv_layer(256, 4)
+        self.deconv_layers_2 = self._make_deconv_layer(128, 4)
+        self.deconv_layers_3 = self._make_deconv_layer(64, 4)
         self.init_weights()
 
     def forward(self, x):
@@ -46,7 +47,7 @@ class DeconvUp(nn.Module):
         
         layers.append(
             nn.ConvTranspose2d(
-                in_channels=self.inplanes_t,
+                in_channels=self.inplanes,
                 out_channels=planes,
                 kernel_size=kernel,
                 stride=2,
@@ -55,7 +56,7 @@ class DeconvUp(nn.Module):
                 bias=self.deconv_with_bias))
         layers.append(nn.BatchNorm2d(planes, momentum=BN_MOMENTUM))
         layers.append(nn.ReLU(inplace=True))
-        self.inplanes_t = planes
+        self.inplanes = planes
 
         return nn.Sequential(*layers)
 

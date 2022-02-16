@@ -646,7 +646,7 @@ class SwinTransformer(nn.Module):
 
 def Swin_T(pretrained=False):
     embed_dim, depths, num_heads, window_size = 96, [2, 2, 6, 2], [3, 6, 12, 24], 7
-    img_size = [224, 224]
+    img_size = [384, 1280]
     model = SwinTransformer(pretrain_img_size=img_size,
                  patch_size=4,
                  in_chans=3,
