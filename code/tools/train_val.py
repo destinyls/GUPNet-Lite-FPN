@@ -48,7 +48,8 @@ def main():
     train_loader, val_loader, test_loader = build_dataloader(cfg['dataset'])
 
     # build model
-    model = build_model(cfg['model'],train_loader.dataset.cls_mean_size)
+    ckpt = args.ckpt if args.ckpt is not '' else None
+    model = build_model(cfg['model'], train_loader.dataset.cls_mean_size, ckpt=ckpt)
 
     # evaluation mode
     if args.evaluate:

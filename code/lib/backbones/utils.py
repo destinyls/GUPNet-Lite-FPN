@@ -318,6 +318,8 @@ def load_checkpoint(model,
     # strip prefix of state_dict
     if list(state_dict.keys())[0].startswith('module.'):
         state_dict = {k[7:]: v for k, v in state_dict.items()}
+    if list(state_dict.keys())[0].startswith('encoder.'):
+        state_dict = {k[8:]: v for k, v in state_dict.items()}
 
     # for MoBY, load model of online branch
     if sorted(list(state_dict.keys()))[0].startswith('encoder'):

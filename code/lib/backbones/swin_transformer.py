@@ -643,7 +643,7 @@ class SwinTransformer(nn.Module):
         super(SwinTransformer, self).train(mode)
         self._freeze_stages()
 
-def Swin_T(pretrained=False):
+def Swin_T(pretrained=False, ckpt=None):
     embed_dim, depths, num_heads, window_size = 96, [2, 2, 6, 2], [3, 6, 12, 24], 7
     model = SwinTransformer(pretrain_img_size=224,
                  patch_size=4,
@@ -658,11 +658,18 @@ def Swin_T(pretrained=False):
                  out_indices=(0, 1, 2, 3),
                  frozen_stages=-1,
                  use_checkpoint=False)
+
     if pretrained:
-        model.init_weights(model_urls['swin_tiny_patch4_window7_224'])
+        if ckpt is None:
+            model.init_weights(model_urls['swin_tiny_patch4_window7_224'])
+        else:
+            model.init_weights(ckpt)
+    else:
+        model.init_weights()
+
     return model
 
-def Swin_S(pretrained=False):
+def Swin_S(pretrained=False, ckpt=None):
     embed_dim, depths, num_heads, window_size = 96, [2, 2, 18, 2], [3, 6, 12, 24], 7
     model = SwinTransformer(pretrain_img_size=224,
                  patch_size=4,
@@ -675,12 +682,19 @@ def Swin_S(pretrained=False):
                  out_indices=(0, 1, 2, 3),
                  frozen_stages=-1,
                  use_checkpoint=False)
+
     if pretrained:
-        model.init_weights(model_urls['swin_small_patch4_window7_224'])
+        if ckpt is None:
+            model.init_weights(model_urls['swin_small_patch4_window7_224'])
+        else:
+            model.init_weights(ckpt)
+    else:
+        model.init_weights()
+
     return model
 
-def Swin_B(pretrained=False):
-    embed_dim, depths, num_heads, window_size = 128, [2, 2, 18, 2], [4, 8, 16, 32], 7
+def Swin_B(pretrained=False, ckpt=None):
+    embed_dim, depths, num_heads, window_size = 128, [2, 2, 18, 2], [4, 8, 16, 32], 6
     model = SwinTransformer(pretrain_img_size=224,
                  patch_size=4,
                  in_chans=3,
@@ -693,6 +707,13 @@ def Swin_B(pretrained=False):
                  out_indices=(0, 1, 2, 3),
                  frozen_stages=-1,
                  use_checkpoint=False)
+
     if pretrained:
-        model.init_weights(model_urls['swin_base_patch4_window7_224'])
+        if ckpt is None:
+            model.init_weights(model_urls['swin_base_patch4_window7_224'])
+        else:
+            model.init_weights(ckpt)
+    else:
+        model.init_weights()
+
     return model

@@ -43,7 +43,7 @@ def weights_init_classifier(m):
             nn.init.constant_(m.bias, 0.0)
 
 class GUPNet(nn.Module):
-    def __init__(self, backbone='dla34', neck='DLAUp', downsample=4, mean_size=None):
+    def __init__(self, backbone='dla34', neck='DLAUp', downsample=4, mean_size=None, ckpt=None):
         assert downsample in [4, 8, 16, 32]
         super().__init__()
         self.backbone_name = backbone
@@ -51,7 +51,7 @@ class GUPNet(nn.Module):
         if "dla" in backbone:
             self.backbone = globals()[backbone](pretrained=True, return_levels=True)
         else:
-            self.backbone = globals()[backbone](pretrained=True)
+            self.backbone = globals()[backbone](pretrained=True, ckpt=ckpt)
 
         self.head_conv = 256  # default setting for head conv
         self.mean_size = nn.Parameter(torch.tensor(mean_size,dtype=torch.float32),requires_grad=False)
