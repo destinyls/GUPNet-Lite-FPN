@@ -68,21 +68,20 @@ class Trainer(object):
             self.epoch += 1
             
             # update learning rate
-            if self.warmup_lr_scheduler is not None and epoch < 5:
+            if self.warmup_lr_scheduler is not None and self.epoch < 5:
                 self.warmup_lr_scheduler.step()
             else:
                 self.lr_scheduler.step()
             
-            if (self.epoch % self.cfg_train['eval_frequency']) == 0:
+            if (self.epoch % self.cfg_train['eval_frequency']) == 0 and self.epoch > 50:
                 self.logger.info('------ EVAL EPOCH %03d ------' % (self.epoch))
-                self.eval_one_epoch(epoch)
+                self.eval_one_epoch(self.epoch)
 
             # save trained model
             if (self.epoch % self.cfg_train['save_frequency']) == 0:
-                os.makedirs(self.cfg_train['log_dir']+'/checkpoints', exist_ok=True)
-                ckpt_name = os.path.join(self.cfg_train['log_dir']+'/checkpoints', 'checkpoint_epoch_%d' % self.epoch)
+                os.makedirs(os.path.join(self.cfg_train['output_dir'], 'checkpoints'), exist_ok=True)
+                ckpt_name = os.path.join(self.cfg_train['output_dir'], 'checkpoints', 'checkpoint_epoch_%d'%self.epoch)
                 save_checkpoint(get_checkpoint_state(self.model, self.optimizer, self.epoch), ckpt_name, self.logger)
-
         return None
     
     def compute_e0_loss(self):
@@ -146,7 +145,7 @@ class Trainer(object):
             for key in loss_terms.keys():
                 if key not in disp_dict.keys():
                     disp_dict[key] = 0
-                disp_dict[key] += loss_terms[key]   
+                disp_dict[key] += loss_terms[key]
             # display statistics in terminal
             if trained_batch % self.cfg_train['disp_frequency'] == 0:
                 log_str = 'BATCH[%04d/%04d]' % (trained_batch, len(self.train_loader))
@@ -191,14 +190,14 @@ class Trainer(object):
                 results.update(dets)
                 progress_bar.update()
             progress_bar.close()
-        self.save_results(results)
 
-        gt_label_path = "/root/Dataset/kitti_dataset/training/label_2/"
-        imageset_txt = "/root/Dataset/kitti_dataset/ImageSets/val.txt"
-        pred_label_path = os.path.join('./outputs', 'data')
-        evaluation_path = os.path.join('./outputs', self.cfg_train['output_dir'])
-        if not os.path.exists(evaluation_path):
-            os.makedirs(evaluation_path)
+        pred_label_path = os.path.join('./outputs', self.cfg_train['output_dir'], str(epoch))
+        self.save_results(results, pred_label_path)
+
+        gt_label_path = "/root/GUPNet/datasets/KITTI/training/label_2/"
+        imageset_txt = "/root/GUPNet/datasets/KITTI/ImageSets/val.txt"
+        evaluation_path = os.path.join('./outputs', self.cfg_train['output_dir'], 'eval_metric')
+        os.makedirs(evaluation_path, exist_ok=True)
         result, ret_dict = evaluate_python(label_path=gt_label_path, 
                                             result_path=pred_label_path,
                                             label_split_file=imageset_txt,
@@ -207,11 +206,9 @@ class Trainer(object):
         mAP_3d_moderate = ret_dict['Car_3d_0.70/moderate']
         with open(os.path.join(evaluation_path, 'epoch_result_' + '{:07d}_{}.txt'.format(epoch, round(mAP_3d_moderate, 2))), "w") as f:
             f.write(result)
-                
+        
     def save_results(self, results, output_dir='./outputs'):
-        output_dir = os.path.join(output_dir, 'data')
         os.makedirs(output_dir, exist_ok=True)
-
         for img_id in results.keys():
             out_path = os.path.join(output_dir, '{:06d}.txt'.format(img_id))
             f = open(out_path, 'w')

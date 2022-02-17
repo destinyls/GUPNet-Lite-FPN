@@ -19,7 +19,7 @@ from torch.hub import load_state_dict_from_url
 
 model_urls = {
     'swin_base_patch4_window12_384': 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window12_384_22kto1k.pth',
-    'swin_base_patch4_window7_224': 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224_22kto1k.pth',
+    'swin_base_patch4_window7_224': 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window7_224.pth',
     'swin_large_patch4_window12_384': 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window12_384_22kto1k.pth',
     'swin_large_patch4_window7_224': 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_large_patch4_window7_224_22kto1k.pth',
     'swin_small_patch4_window7_224': 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_small_patch4_window7_224.pth',
@@ -517,8 +517,7 @@ class SwinTransformer(nn.Module):
         self.out_indices = out_indices
         self.frozen_stages = frozen_stages
 
-        self.channels = [embed_dim//4, embed_dim//2, embed_dim, embed_dim*2, embed_dim*4, embed_dim*8]
-        self.out_channel = embed_dim * 8
+        self.channels = embed_dim * 8
 
         # split image into non-overlapping patches
         self.patch_embed = PatchEmbed(
@@ -646,26 +645,54 @@ class SwinTransformer(nn.Module):
 
 def Swin_T(pretrained=False):
     embed_dim, depths, num_heads, window_size = 96, [2, 2, 6, 2], [3, 6, 12, 24], 7
-    img_size = [384, 1280]
-    model = SwinTransformer(pretrain_img_size=img_size,
+    model = SwinTransformer(pretrain_img_size=224,
                  patch_size=4,
                  in_chans=3,
                  embed_dim=embed_dim,
                  depths=depths,
                  num_heads=num_heads,
                  window_size=window_size,
-                 mlp_ratio=4.,
-                 qkv_bias=True,
-                 qk_scale=None,
-                 drop_rate=0.,
-                 attn_drop_rate=0.,
-                 drop_path_rate=0.2,
-                 norm_layer=nn.LayerNorm,
                  ape=False,
+                 drop_path_rate=0.2,
                  patch_norm=True,
                  out_indices=(0, 1, 2, 3),
                  frozen_stages=-1,
                  use_checkpoint=False)
     if pretrained:
         model.init_weights(model_urls['swin_tiny_patch4_window7_224'])
+    return model
+
+def Swin_S(pretrained=False):
+    embed_dim, depths, num_heads, window_size = 96, [2, 2, 18, 2], [3, 6, 12, 24], 7
+    model = SwinTransformer(pretrain_img_size=224,
+                 patch_size=4,
+                 in_chans=3,
+                 embed_dim=embed_dim,
+                 depths=depths,
+                 num_heads=num_heads,
+                 window_size=window_size,
+                 ape=False,
+                 out_indices=(0, 1, 2, 3),
+                 frozen_stages=-1,
+                 use_checkpoint=False)
+    if pretrained:
+        model.init_weights(model_urls['swin_small_patch4_window7_224'])
+    return model
+
+def Swin_B(pretrained=False):
+    embed_dim, depths, num_heads, window_size = 128, [2, 2, 18, 2], [4, 8, 16, 32], 7
+    model = SwinTransformer(pretrain_img_size=224,
+                 patch_size=4,
+                 in_chans=3,
+                 embed_dim=embed_dim,
+                 depths=depths,
+                 num_heads=num_heads,
+                 window_size=window_size,
+                 ape=False,
+                 drop_path_rate=0.3,
+                 out_indices=(0, 1, 2, 3),
+                 frozen_stages=-1,
+                 use_checkpoint=False)
+    if pretrained:
+        model.init_weights(model_urls['swin_base_patch4_window7_224'])
     return model

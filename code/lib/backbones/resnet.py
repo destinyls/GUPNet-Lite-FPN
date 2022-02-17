@@ -395,6 +395,7 @@ class ResNet(nn.Module):
         self.stem_channels = stem_channels
         self.base_channels = base_channels
         self.num_stages = num_stages
+        self.channels = 512
 
         assert num_stages >= 1 and num_stages <= 4
         self.strides = strides
@@ -450,7 +451,7 @@ class ResNet(nn.Module):
             layer_name = f'layer{i + 1}'
             self.add_module(layer_name, res_layer)
             self.res_layers.append(layer_name)
-
+        
         self._freeze_stages()
 
         self.feat_dim = self.block.expansion * base_channels * 2**(

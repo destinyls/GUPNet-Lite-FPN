@@ -5,7 +5,7 @@ import numpy as np
 from lib.backbones.dla import dla34
 from lib.backbones.dlaup import DLAUp
 from lib.backbones.dlaup import DLAUpv2
-from lib.backbones.swin_transformer import Swin_T
+from lib.backbones.swin_transformer import Swin_T, Swin_S, Swin_B
 from lib.backbones.resnet import ResNet18, ResNet50
 from lib.backbones.deconv_up import DeconvUp
 
@@ -46,6 +46,7 @@ class GUPNet(nn.Module):
     def __init__(self, backbone='dla34', neck='DLAUp', downsample=4, mean_size=None):
         assert downsample in [4, 8, 16, 32]
         super().__init__()
+        self.backbone_name = backbone
 
         if "dla" in backbone:
             self.backbone = globals()[backbone](pretrained=True, return_levels=True)
@@ -62,7 +63,8 @@ class GUPNet(nn.Module):
             self.feat_up = globals()[neck](channels[self.first_level:], scales_list=scales) 
             neck_channels = channels[self.first_level]
         else:
-            self.feat_up = globals()[neck](input_channels=768)
+            channels = self.backbone.channels
+            self.feat_up = globals()[neck](input_channels=channels)
             neck_channels = self.feat_up.channels
         
         # initialize the head of pipeline, according to heads setting.
@@ -105,9 +107,12 @@ class GUPNet(nn.Module):
     def forward(self, input, coord_ranges,calibs, targets=None, K=50, mode='train'):
         device_id = input.device
         BATCH_SIZE = input.size(0)
-        feats = self.backbone(input)        
-        # feats = self.feat_up(feats[self.first_level:])
-        feats = self.feat_up(feats[-1])
+        feats = self.backbone(input)    
+        if "dla" in self.backbone_name:    
+            feats = self.feat_up(feats[self.first_level:])
+            feats = [feats]
+        else:
+            feats = self.feat_up(feats[-1])
         '''
         ret = {}
         for head in self.heads:

@@ -1,9 +1,26 @@
+import os
+import sys
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+sys.path.append(ROOT_DIR)
+
 import numpy as np
 import torch.nn as nn
+from torch.nn.modules.batchnorm import _BatchNorm
+
 from mmcv.cnn import build_conv_layer, build_norm_layer
+from mmcv.cnn import (build_conv_layer, build_norm_layer, build_plugin_layer,
+                      constant_init, kaiming_init)
+from mmcv.runner import load_checkpoint
+from mmdet.utils import get_root_logger
 
 from .resnet import ResNet
 from .resnext import Bottleneck
+
+model_urls = {
+    'regnetx_800mf': 'https://download.openmmlab.com/pretrain/third_party/regnetx_800mf-1f4be4c7.pth',
+    'regnetx_3.2gf': 'https://download.openmmlab.com/pretrain/third_party/regnetx_3.2gf-c2599b0f.pth',
+}
 
 class RegNet(ResNet):
     """RegNet backbone.
@@ -320,3 +337,81 @@ class RegNet(ResNet):
             if i in self.out_indices:
                 outs.append(x)
         return tuple(outs)
+
+    def init_weights(self, pretrained=None):
+        """Initialize the weights in backbone.
+
+        Args:
+            pretrained (str, optional): Path to pre-trained weights.
+                Defaults to None.
+        """
+        if isinstance(pretrained, str):
+            logger = get_root_logger()
+            load_checkpoint(self, pretrained, strict=False, logger=logger)
+        elif pretrained is None:
+            for m in self.modules():
+                if isinstance(m, nn.Conv2d):
+                    kaiming_init(m)
+                elif isinstance(m, (_BatchNorm, nn.GroupNorm)):
+                    constant_init(m, 1)
+
+            if self.dcn is not None:
+                for m in self.modules():
+                    if isinstance(m, Bottleneck) and hasattr(
+                            m.conv2, 'conv_offset'):
+                        constant_init(m.conv2.conv_offset, 0)
+
+            if self.zero_init_residual:
+                for m in self.modules():
+                    if isinstance(m, Bottleneck):
+                        constant_init(m.norm3, 0)
+        else:
+            raise TypeError('pretrained must be a str or None')
+
+def RegNetX_800MF(pretrained=False):
+    arch, frozen_stages = 'regnetx_800mf', 1
+    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
+    if pretrained:
+        print('===> loading imagenet pretrained model.')
+        model.init_weights(model_urls['regnetx_800mf'])
+    
+    return model
+
+def RegNetX_1_6GF(pretrained=False):
+    arch, frozen_stages = 'regnetx_1.6gf', 1
+    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
+    if pretrained:
+        print('===> loading imagenet pretrained model.')
+        model.init_weights(model_urls['regnetx_1.6gf'])
+
+    return model
+
+def RegNetX_1_6GF(pretrained=False):
+    arch, frozen_stages = 'regnetx_1.6gf', 1
+    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
+                 
+    return model
+
+def RegNetX_3_2GF(pretrained=False):
+    arch, frozen_stages = 'regnetx_3.2gf', 1
+    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
+                 
+    return model
+
+def RegNetX_4_0GF(pretrained=False):
+    arch, frozen_stages = 'regnetx_4.0gf', 1
+    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
+                 
+    return model
+
+def RegNetX_6_4GF(pretrained=False):
+    arch, frozen_stages = 'regnetx_6.4gf', 1
+    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
+                 
+    return model
+
+def RegNetX_8_0GF(pretrained=False):
+    arch, frozen_stages = 'regnetx_8.0gf', 1
+    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
+                 
+    return model

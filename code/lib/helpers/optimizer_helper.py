@@ -14,6 +14,8 @@ def build_optimizer(cfg_optimizer, model):
 
     if cfg_optimizer['type'] == 'adam':
         optimizer = optim.Adam(parameters, lr=cfg_optimizer['lr'])
+    elif cfg_optimizer['type'] == 'adamw':
+        optimizer = optim.AdamW(parameters, lr=cfg_optimizer['lr'])
     elif cfg_optimizer['type'] == 'sgd':
         optimizer = optim.SGD(parameters, lr=cfg_optimizer['lr'], momentum=0.9)
     else:

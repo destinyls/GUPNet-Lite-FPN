@@ -15,11 +15,11 @@ dataset:
 
 model:
   type: 'gupnet'
-  backbone: 'Swin_T'
+  backbone: 'Swin_B'
   neck: 'DeconvUp'
 
 optimizer:
-  type: 'adam'
+  type: 'adamw'
   lr: 0.0001
   weight_decay: 0.05
 
@@ -29,12 +29,12 @@ lr_scheduler:
   decay_list: [90, 120]
 
 trainer:
-  max_epoch: 200
-  eval_frequency: 5 # evaluation interval (in epoch)
+  max_epoch: 400
+  eval_frequency: 1000 # evaluation interval (in epoch)
   save_frequency: 10 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)
   log_dir: 'log'
-  output_dir: "eval_metrics_R40_Swin_T_DeconvUp_8_001nd"
+  output_dir: "outputs/eval_metrics_R40_Swin_B_DeconvUp_001nd"
   #resume_model: '...'  
 tester:
   threshold: 0.2  # confidence filter
