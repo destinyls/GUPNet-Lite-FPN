@@ -100,6 +100,7 @@ class RegNet(ResNet):
                  in_channels=3,
                  stem_channels=32,
                  base_channels=32,
+                 out_channels=912,
                  strides=(2, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
                  out_indices=(0, 1, 2, 3),
@@ -216,7 +217,9 @@ class RegNet(ResNet):
         self._freeze_stages()
 
         self.feat_dim = stage_widths[-1]
+        self.channels = out_channels
         self.block.expansion = expansion_bak
+
 
     def _make_stem_layer(self, in_channels, base_channels):
         self.conv1 = build_conv_layer(
@@ -368,49 +371,50 @@ class RegNet(ResNet):
         else:
             raise TypeError('pretrained must be a str or None')
 
-def RegNetX_800MF(pretrained=False):
-    arch, frozen_stages = 'regnetx_800mf', 1
-    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
+def RegNetX_800MF(pretrained=False, ckpt=None):
+    arch, frozen_stages, out_channels = 'regnetx_800mf', 1, 672
+    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages, out_channels=out_channels)
     if pretrained:
         print('===> loading imagenet pretrained model.')
         model.init_weights(model_urls['regnetx_800mf'])
     
     return model
 
-def RegNetX_1_6GF(pretrained=False):
-    arch, frozen_stages = 'regnetx_1.6gf', 1
-    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
+def RegNetX_1_6GF(pretrained=False, ckpt=None):
+    arch, frozen_stages, out_channels = 'regnetx_1.6gf', 1, 912
+    model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages, out_channels=out_channels)
+    model.set_channels(channels=912)
     if pretrained:
         print('===> loading imagenet pretrained model.')
         model.init_weights(model_urls['regnetx_1.6gf'])
 
     return model
 
-def RegNetX_1_6GF(pretrained=False):
+def RegNetX_1_6GF(pretrained=False, ckpt=None):
     arch, frozen_stages = 'regnetx_1.6gf', 1
     model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
                  
     return model
 
-def RegNetX_3_2GF(pretrained=False):
+def RegNetX_3_2GF(pretrained=False, ckpt=None):
     arch, frozen_stages = 'regnetx_3.2gf', 1
     model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
                  
     return model
 
-def RegNetX_4_0GF(pretrained=False):
+def RegNetX_4_0GF(pretrained=False, ckpt=None):
     arch, frozen_stages = 'regnetx_4.0gf', 1
     model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
                  
     return model
 
-def RegNetX_6_4GF(pretrained=False):
+def RegNetX_6_4GF(pretrained=False, ckpt=None):
     arch, frozen_stages = 'regnetx_6.4gf', 1
     model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
                  
     return model
 
-def RegNetX_8_0GF(pretrained=False):
+def RegNetX_8_0GF(pretrained=False, ckpt=None):
     arch, frozen_stages = 'regnetx_8.0gf', 1
     model = RegNet(arch, in_channels=3, frozen_stages=frozen_stages)
                  
