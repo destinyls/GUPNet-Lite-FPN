@@ -694,7 +694,7 @@ def Swin_S(pretrained=False, ckpt=None):
     return model
 
 def Swin_B(pretrained=False, ckpt=None):
-    embed_dim, depths, num_heads, window_size = 128, [2, 2, 18, 2], [4, 8, 16, 32], 6
+    embed_dim, depths, num_heads, window_size = 128, [2, 2, 18, 2], [4, 8, 16, 32], 7
     model = SwinTransformer(pretrain_img_size=224,
                  patch_size=4,
                  in_chans=3,

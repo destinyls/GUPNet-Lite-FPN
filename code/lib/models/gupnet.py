@@ -7,6 +7,7 @@ from lib.backbones.dlaup import DLAUp
 from lib.backbones.dlaup import DLAUpv2
 from lib.backbones.swin_transformer import Swin_T, Swin_S, Swin_B
 from lib.backbones.resnet import ResNet18, ResNet50
+from lib.backbones.regnet import RegNetX_800MF, RegNetX_1_6GF, RegNetX_3_2GF
 from lib.backbones.deconv_up import DeconvUp
 
 import torchvision.ops.roi_align as roi_align
@@ -113,6 +114,7 @@ class GUPNet(nn.Module):
             feats = [feats]
         else:
             feats = self.feat_up(feats[-1])
+        
         '''
         ret = {}
         for head in self.heads:

@@ -655,7 +655,7 @@ class ResNet(nn.Module):
                     m.eval()
 
 
-def ResNet18(pretrained=False):
+def ResNet18(pretrained=False, ckpt=None):
     """
     Constructs a ResNet-18 model.
     Arguments:
@@ -668,7 +668,7 @@ def ResNet18(pretrained=False):
         model.init_weights(model_urls['resnet18'])
     return model
 
-def ResNet50(pretrained=False):
+def ResNet50(pretrained=False, ckpt=None):
     """
     Constructs a ResNet-18 model.
     Arguments:

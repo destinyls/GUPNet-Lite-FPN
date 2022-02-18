@@ -3,7 +3,7 @@ random_seed: 444
 dataset:
   type: 'kitti'
   root_dir: '/root/GUPNet/datasets'
-  batch_size: 16
+  batch_size: 1
   class_merging: False
   use_dontcare: False
   use_3d_center: True
