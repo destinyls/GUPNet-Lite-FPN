@@ -8,6 +8,7 @@ from lib.backbones.dlaup import DLAUpv2
 from lib.backbones.swin_transformer import Swin_T, Swin_S, Swin_B
 from lib.backbones.resnet import ResNet18, ResNet50
 from lib.backbones.regnet import RegNetX_800MF, RegNetX_1_6GF, RegNetX_3_2GF
+from lib.backbones.convnext import convnext_tiny, convnext_small, convnext_base, convnext_large, convnext_xlarge
 from lib.backbones.deconv_up import DeconvUp
 
 import torchvision.ops.roi_align as roi_align

@@ -15,7 +15,6 @@ from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 from .utils import load_checkpoint
 from mmdet.utils import get_root_logger
-from torch.hub import load_state_dict_from_url
 
 model_urls = {
     'swin_base_patch4_window12_384': 'https://github.com/SwinTransformer/storage/releases/download/v1.0.0/swin_base_patch4_window12_384_22kto1k.pth',
