@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from lib.backbones.convnext import LayerNorm
+
 BN_MOMENTUM = 0.1
 
 class DeconvUp(nn.Module):
@@ -54,8 +56,8 @@ class DeconvUp(nn.Module):
                 padding=padding,
                 output_padding=output_padding,
                 bias=self.deconv_with_bias))
-        layers.append(nn.BatchNorm2d(planes, momentum=BN_MOMENTUM))
-        layers.append(nn.ReLU(inplace=True))
+        layers.append(LayerNorm(planes, eps=1e-6, data_format="channels_first"))
+        layers.append(nn.GELU())
         self.inplanes = planes
 
         return nn.Sequential(*layers)
@@ -84,3 +86,6 @@ class DeconvUp(nn.Module):
                 # print('=> init {}.bias as 0'.format(name))
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
+            elif isinstance(m, LayerNorm):
+                nn.init.constant_(m.bias, 0)
+                nn.init.constant_(m.weight, 1.0)

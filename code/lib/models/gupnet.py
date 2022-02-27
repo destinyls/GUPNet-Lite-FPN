@@ -10,6 +10,7 @@ from lib.backbones.resnet import ResNet18, ResNet50
 from lib.backbones.regnet import RegNetX_800MF, RegNetX_1_6GF, RegNetX_3_2GF
 from lib.backbones.convnext import convnext_tiny, convnext_small, convnext_base, convnext_large, convnext_xlarge
 from lib.backbones.deconv_up import DeconvUp
+from lib.backbones.convnext import LayerNorm
 
 import torchvision.ops.roi_align as roi_align
 from lib.losses.loss_function import extract_input_from_tensor
@@ -29,6 +30,9 @@ def weights_init_xavier(m):
         if m.affine:
             nn.init.constant_(m.weight, 1.0)
             nn.init.constant_(m.bias, 0.0)
+    elif classname.find('LayerNorm') != -1:
+        nn.init.constant_(m.weight, 1.0)
+        nn.init.constant_(m.bias, 0.0)
  
 def weights_init_classifier(m):
     classname = m.__class__.__name__
@@ -71,30 +75,30 @@ class GUPNet(nn.Module):
         
         # initialize the head of pipeline, according to heads setting.
         self.heatmap = nn.Sequential(nn.Conv2d(neck_channels, self.head_conv, kernel_size=3, padding=1, bias=True),
-                                     nn.ReLU(inplace=True),
+                                     nn.GELU(),
                                      nn.Conv2d(self.head_conv, 3, kernel_size=1, stride=1, padding=0, bias=True))
         self.offset_2d = nn.Sequential(nn.Conv2d(neck_channels, self.head_conv, kernel_size=3, padding=1, bias=True),
-                                     nn.ReLU(inplace=True),
+                                     nn.GELU(),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
         self.size_2d = nn.Sequential(nn.Conv2d(neck_channels, self.head_conv, kernel_size=3, padding=1, bias=True),
-                                     nn.ReLU(inplace=True),
+                                     nn.GELU(),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
 
         self.depth = nn.Sequential(nn.Conv2d(neck_channels+2+self.cls_num , self.head_conv, kernel_size=3, padding=1, bias=True),
-                                     nn.BatchNorm2d(self.head_conv),
-                                     nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
+                                     LayerNorm(self.head_conv, eps=1e-6, data_format="channels_first"),
+                                     nn.GELU(),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
         self.offset_3d = nn.Sequential(nn.Conv2d(neck_channels+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
-                                     nn.BatchNorm2d(self.head_conv),
-                                     nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
+                                     LayerNorm(self.head_conv, eps=1e-6, data_format="channels_first"),
+                                     nn.GELU(),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
         self.size_3d = nn.Sequential(nn.Conv2d(neck_channels+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
-                                     nn.BatchNorm2d(self.head_conv),
-                                     nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
+                                     LayerNorm(self.head_conv, eps=1e-6, data_format="channels_first"),
+                                     nn.GELU(),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 4, kernel_size=1, stride=1, padding=0, bias=True))
         self.heading = nn.Sequential(nn.Conv2d(neck_channels+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
-                                     nn.BatchNorm2d(self.head_conv),
-                                     nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
+                                     LayerNorm(self.head_conv, eps=1e-6, data_format="channels_first"),
+                                     nn.GELU(),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 24, kernel_size=1, stride=1, padding=0, bias=True))
         # init layers
         self.heatmap[-1].bias.data.fill_(-2.19)
