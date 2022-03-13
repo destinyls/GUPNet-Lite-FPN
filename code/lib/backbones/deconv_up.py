@@ -7,7 +7,7 @@ import torch.nn.functional as F
 BN_MOMENTUM = 0.1
 
 class DeconvUp(nn.Module):
-    def __init__(self, input_channels):
+    def __init__(self, input_channels, ckpt=None):
         super(DeconvUp, self).__init__()
         # used for deconv layers
         self.inplanes = input_channels
@@ -18,7 +18,7 @@ class DeconvUp(nn.Module):
         self.deconv_layers_1 = self._make_deconv_layer(256, 4)
         self.deconv_layers_2 = self._make_deconv_layer(128, 4)
         self.deconv_layers_3 = self._make_deconv_layer(64, 4)
-        self.init_weights()
+        self.init_weights(pretrained=True, ckpt=ckpt)
 
     def forward(self, x):
         up_level1 = self.deconv_layers_1(x)
@@ -60,16 +60,28 @@ class DeconvUp(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def init_weights(self, pretrained=True):
-        if pretrained:
+    def init_weights(self, pretrained=True, ckpt=None):
+        if pretrained and ckpt is None:
             # print('=> init resnet deconv weights from normal distribution')
             self.init_deconv(self.deconv_layers_1)
             self.init_deconv(self.deconv_layers_2)
             self.init_deconv(self.deconv_layers_3)
         else:
-            print('=> imagenet pretrained model dose not exist')
-            print('=> please download it first')
-            raise ValueError('imagenet pretrained model does not exist')
+            checkpoint = torch.load(ckpt)
+            if 'state_dict' in checkpoint:
+                state_dict = checkpoint['state_dict']
+            elif 'model' in checkpoint:
+                state_dict = checkpoint['model']
+            else:
+                state_dict = checkpoint
+            if list(state_dict.keys())[0].startswith('module.'):
+                state_dict = {k[7:]: v for k, v in state_dict.items()}
+            state_dict_temp = dict()
+            for k, v in state_dict.items():
+                if "encoder" in k and "momentum_encoder" not in k and "neck" in k:
+                    state_dict_temp[k[13:]] = v
+            state_dict = state_dict_temp
+            self.load_state_dict(state_dict)
 
     def init_deconv(self, layer):
         for _, m in layer.named_modules():

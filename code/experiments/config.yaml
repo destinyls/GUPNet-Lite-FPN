@@ -2,8 +2,8 @@ random_seed: 444
 
 dataset:
   type: 'kitti'
-  root_dir: '/root/GUPNet/datasets'
-  batch_size: 8
+  root_dir: '../datasets'
+  batch_size: 16
   class_merging: False
   use_dontcare: False
   use_3d_center: True
@@ -15,7 +15,7 @@ dataset:
 
 model:
   type: 'gupnet'
-  backbone: 'RegNetX_800MF'
+  backbone: 'Swin_B'
   neck: 'DeconvUp'
 
 optimizer:
@@ -34,7 +34,7 @@ trainer:
   save_frequency: 10 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)
   log_dir: 'log'
-  output_dir: "outputs/eval_metrics_R40_RegNetX_800MF_DeconvUp_001nd"
+  output_dir: "outputs/eval_metrics_R40_Swin_B_DeconvUp_CL_Detach_001nd"
   #resume_model: '...'  
 tester:
   threshold: 0.2  # confidence filter

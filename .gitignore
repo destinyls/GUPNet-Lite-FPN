@@ -2,6 +2,7 @@ code/outputs/
 __pycache__/
 *.pyc
 code/log/
+datasets/
 code/pretrained_ckpt/
 *.out
 

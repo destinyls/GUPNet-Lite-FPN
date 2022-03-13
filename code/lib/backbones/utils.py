@@ -318,7 +318,19 @@ def load_checkpoint(model,
     # strip prefix of state_dict
     if list(state_dict.keys())[0].startswith('module.'):
         state_dict = {k[7:]: v for k, v in state_dict.items()}
-    if list(state_dict.keys())[0].startswith('encoder.'):
+        
+    flag = False
+    for k, v in state_dict.items():
+        if "momentum_encoder" in k:
+            flag = True
+            break
+    if flag:
+        state_dict_temp = dict()
+        for k, v in state_dict.items():
+            if "encoder" in k and "momentum_encoder" not in k:
+                state_dict_temp[k[8:]] = v
+        state_dict = state_dict_temp
+    elif list(state_dict.keys())[0].startswith('encoder.'):
         state_dict = {k[8:]: v for k, v in state_dict.items()}
 
     # for MoBY, load model of online branch

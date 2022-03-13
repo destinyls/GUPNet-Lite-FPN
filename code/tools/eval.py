@@ -30,8 +30,8 @@ if __name__ == "__main__":
     cfg_train = cfg['trainer']
     logger = create_logger(os.path.join(cfg_train['log_dir'],'train.log'))    
 
-    gt_label_path = "/root/GUPNet/datasets/KITTI/training/label_2/"
-    imageset_txt = "/root/GUPNet/datasets/KITTI/ImageSets/val.txt"
+    gt_label_path = "../datasets/KITTI/training/label_2/"
+    imageset_txt = "../datasets/KITTI/ImageSets/val.txt"
     pred_label_path = os.path.join('./outputs', 'data')
     os.makedirs(pred_label_path, exist_ok=True)
 
