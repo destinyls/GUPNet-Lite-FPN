@@ -18,6 +18,7 @@ def get_angle_from_box3d(box3d_pts_3d):
     elif direct_vec[0]>=0 and direct_vec[-1]<0:
         angle = np.arctan(np.abs(direct_vec[-1]/direct_vec[0]))
     return angle  
+
 def angle2class(angle):
     ''' Convert continuous angle to discrete class and residual. '''
     angle = angle % (2 * np.pi)

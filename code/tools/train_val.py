@@ -12,7 +12,7 @@ import argparse
 import warnings
 warnings.filterwarnings("ignore")
 
-from lib.helpers.dataloader_helper import build_dataloader
+from lib.helpers.dataloader_helper import build_dataloader_custom
 from lib.helpers.model_helper import build_model
 from lib.helpers.optimizer_helper import build_optimizer
 from lib.helpers.scheduler_helper import build_lr_scheduler
@@ -36,7 +36,6 @@ def create_logger(log_file):
     logging.getLogger(__name__).addHandler(console)
     return logging.getLogger(__name__)
 
-
 def main():  
     # load cfg
     assert (os.path.exists(args.config))
@@ -45,17 +44,23 @@ def main():
     logger = create_logger(os.path.join(cfg['trainer']['log_dir'],'train.log'))    
     
     #  build dataloader
-    train_loader, val_loader, test_loader = build_dataloader(cfg['dataset'])
-
+    train_loader, val_loader, test_loader = build_dataloader_custom(cfg['dataset'])
+    nus_train_loader, nus_val_loader, nus_test_loader = build_dataloader_custom(cfg['dataset_nus'])
+    '''
+    img, P, coord_range, targets, info = nus_train_loader.dataset[150]    
+    print("nus_train_loader: ", img.shape, P.shape, coord_range.shape, targets.keys(), info.keys())
+    img, P, coord_range, targets, info = train_loader.dataset[150]    
+    print("train_loader: ", img.shape, P.shape, coord_range.shape, targets.keys(), info.keys())
+    '''
     # build model
-    model = build_model(cfg['model'],train_loader.dataset.cls_mean_size)
+    model = build_model(cfg['model'], nus_train_loader.dataset.cls_mean_size)
 
     # evaluation mode
     if args.evaluate:
         if args.ckpt != "":
             model_state = torch.load(args.ckpt)["model_state"]
             model.load_state_dict(model_state)
-        tester = Tester(cfg['tester'], model, val_loader, logger)
+        tester = Tester(cfg['tester'], model, nus_val_loader, logger)
         tester.test()
         return
 
@@ -68,15 +73,14 @@ def main():
     trainer = Trainer(cfg=cfg,
                       model=model,
                       optimizer=optimizer,
-                      train_loader=train_loader,
+                      train_loader=nus_train_loader,
                       test_loader=val_loader,
                       lr_scheduler=lr_scheduler,
                       warmup_lr_scheduler=warmup_lr_scheduler,
                       logger=logger)
     trainer.train()
-    tester = Tester(cfg['tester'], model, val_loader, logger)
+    tester = Tester(cfg['tester'], model, nus_val_loader, logger)
     tester.test()
-
 
 if __name__ == '__main__':
     main()

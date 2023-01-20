@@ -118,7 +118,7 @@ class Trainer(object):
         self.model.train()
         disp_dict = {}
         stat_dict = {}
-        for batch_idx, (inputs,calibs,coord_ranges, targets, info) in enumerate(self.train_loader):
+        for batch_idx, (inputs, calibs, coord_ranges, targets, info) in enumerate(self.train_loader):
             inputs = inputs.to(self.device)
             calibs = calibs.to(self.device)
             coord_ranges = coord_ranges.to(self.device)
@@ -167,7 +167,7 @@ class Trainer(object):
         disp_dict = {}
         progress_bar = tqdm.tqdm(total=len(self.test_loader), leave=True, desc='Evaluation Progress')
         with torch.no_grad():
-            for batch_idx, (inputs, calibs, coord_ranges, _, info) in enumerate(self.test_loader):
+            for batch_idx, (inputs, calibs, coord_ranges, targets, info) in enumerate(self.test_loader):
                 # load evaluation data and move data to current device.
                 inputs = inputs.to(self.device)
                 calibs = calibs.to(self.device) 

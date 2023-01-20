@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from lib.datasets.utils import class2angle
+from lib.datasets.gupnet_preprocess import ry2alpha, alpha2ry, rect_to_img, img_to_rect
 
 def decode_detections(dets, info, calibs, cls_mean_size, threshold):
     '''
@@ -29,10 +30,9 @@ def decode_detections(dets, info, calibs, cls_mean_size, threshold):
             # 3d bboxs decoding
             # depth decoding
             depth = dets[i, j, 6]
-
             # heading angle decoding
             alpha = get_heading_angle(dets[i, j, 7:31])
-            ry = calibs[i].alpha2ry(alpha, x)
+            ry = alpha2ry(alpha, x, calibs[i])
 
             # dimensions decoding
             dimensions = dets[i, j, 31:34]
@@ -42,14 +42,16 @@ def decode_detections(dets, info, calibs, cls_mean_size, threshold):
             # positions decoding
             x3d = dets[i, j, 34] * info['bbox_downsample_ratio'][i][0]
             y3d = dets[i, j, 35] * info['bbox_downsample_ratio'][i][1]
-            locations = calibs[i].img_to_rect(x3d, y3d, depth).reshape(-1)
+            
+            # locations = calibs[i].img_to_rect(x3d, y3d, depth).reshape(-1)
+            locations = img_to_rect(x3d, y3d, depth, calibs[i]).reshape(-1)
             locations[1] += dimensions[0] / 2
 
             preds.append([cls_id, alpha] + bbox + dimensions.tolist() + locations.tolist() + [ry, score])
         results[info['img_id'][i]] = preds
-    return results
+    return results, preds
     
-#two stage style    
+# two stage style    
 def extract_dets_from_outputs(outputs, K=50):
     # get src outputs
     heatmap = outputs['heatmap']

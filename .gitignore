@@ -1,3 +1,6 @@
 code/outputs/
+code/checkpoints/
+code/log/
+code/datasets/
 __pycache__/
 *.pyc
