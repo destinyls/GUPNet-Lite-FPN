@@ -156,6 +156,7 @@ class GUPNetPreprocess(object):
             gt_bboxes_3d = results["gt_bboxes_3d"].data.tensor.numpy()
             gt_labels_3d = results["gt_labels_3d"].data.numpy()
             gt_bboxes = results["gt_bboxes"].data.numpy()
+            attr_labels = results["attr_labels"].data.numpy()
             # self.visualize(img, gt_bboxes_3d, cam2img)
 
             heatmap = np.zeros((self.num_classes, features_size[1], features_size[0]), dtype=np.float32) # C * H * W
@@ -171,6 +172,8 @@ class GUPNetPreprocess(object):
             indices = np.zeros((self.max_objs), dtype=np.int64)
             mask_2d = np.zeros((self.max_objs), dtype=np.uint8)
             mask_3d = np.zeros((self.max_objs), dtype=np.uint8)
+            attrs = np.zeros((self.max_objs), dtype=np.uint8)
+            velocity = np.zeros((self.max_objs, 2), dtype=np.float32)
 
             object_num = gt_bboxes_3d.shape[0] if gt_bboxes_3d.shape[0] < self.max_objs else self.max_objs
             for i in range(object_num):
@@ -182,6 +185,7 @@ class GUPNetPreprocess(object):
                 loc = gt_bbox3d[:3]
                 lhw = gt_bbox3d[3:6]
                 r_y = gt_bbox3d[6]
+                velo = gt_bbox3d[7:]
                 # filter inappropriate samples by difficulty
                 if loc[-1] < 2: continue
                 # process 2d bbox & get 2d center
@@ -227,6 +231,8 @@ class GUPNetPreprocess(object):
                 size_3d[i] = src_size_3d[i] - mean_size
                 mask_2d[i] = 1
                 mask_3d[i] = 1
+                velocity[i] = velo
+                attrs[i] = attr_labels[i]
                             
             targets = {'depth': depth,
                        'size_2d': size_2d,
@@ -238,7 +244,9 @@ class GUPNetPreprocess(object):
                        'heading_bin': heading_bin,
                        'heading_res': heading_res,
                        'cls_ids': cls_ids,
-                       'mask_2d': mask_2d} 
+                       'mask_2d': mask_2d,
+                       'attrs' : attrs,
+                       'velocity': velocity}
         else:
             targets = {}
         # collect return data

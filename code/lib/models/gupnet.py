@@ -86,18 +86,20 @@ class GUPNet(nn.Module):
                                      nn.BatchNorm2d(self.head_conv),
                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
                                      nn.Conv2d(self.head_conv, 24, kernel_size=1, stride=1, padding=0, bias=True))
-        
+          
         self.velocity = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
-                                     nn.BatchNorm2d(self.head_conv),
-                                     nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
-                                     nn.Conv2d(self.head_conv, self.num_velo, kernel_size=1, stride=1, padding=0, bias=True))
+                                      nn.BatchNorm2d(self.head_conv),
+                                      nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
+                                      nn.Conv2d(self.head_conv, 2, kernel_size=1, stride=1, padding=0, bias=True))
         self.attrs = nn.Sequential(nn.Conv2d(channels[self.first_level]+2+self.cls_num, self.head_conv, kernel_size=3, padding=1, bias=True),
-                                     nn.BatchNorm2d(self.head_conv),
-                                     nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
-                                     nn.Conv2d(self.head_conv, self.num_attrs, kernel_size=1, stride=1, padding=0, bias=True))
+                                   nn.BatchNorm2d(self.head_conv),
+                                   nn.ReLU(inplace=True),nn.AdaptiveAvgPool2d(1),
+                                   nn.Conv2d(self.head_conv, 9, kernel_size=1, stride=1, padding=0, bias=True))
         
         # init layers
         self.heatmap[-1].bias.data.fill_(-2.19)
+        self.attrs[-1].bias.data.fill_(-2.19)
+
         self.fill_fc_weights(self.offset_2d)
         self.fill_fc_weights(self.size_2d)
 
@@ -106,7 +108,6 @@ class GUPNet(nn.Module):
         self.size_3d.apply(weights_init_xavier)
         self.heading.apply(weights_init_xavier)
         self.velocity.apply(weights_init_xavier)
-        self.attrs.apply(weights_init_xavier)
 
     def forward(self, input, coord_ranges, calibs, targets=None, K=50, mode='train'):
         device_id = input.device
@@ -182,16 +183,14 @@ class GUPNet(nn.Module):
 
             depth_net_out = torch.cat([(1. / (depth_net_out[:,0:1].sigmoid() + 1e-6) - 1.)+depth_geo.unsqueeze(-1),depth_net_log_std],-1)
 
-
-
             res['train_tag'] = torch.ones(num_masked_bin).type(torch.bool).to(device_id)
             res['heading'] = self.heading(roi_feature_masked)[:,:,0,0]
             res['depth'] = depth_net_out
             res['offset_3d'] = self.offset_3d(roi_feature_masked)[:,:,0,0]
             res['size_3d']= size3d_offset
             res['h3d_log_variance'] = h3d_log_std
-            res['velo'] = self.velocity(roi_feature_masked)[:,:,0,0]
-            res['attrs'] = self.attrs(roi_feature_masked)[:,:,0,0]
+            res['velocity'] = self.velocity(roi_feature_masked)[:,:,0,0]
+            res['attrs'] = self.attrs(roi_feature_masked)[:,:,0,0].softmax(dim=1)
         else:
             res['depth'] = torch.zeros([1,2]).to(device_id)
             res['offset_3d'] = torch.zeros([1,2]).to(device_id)
@@ -199,7 +198,7 @@ class GUPNet(nn.Module):
             res['train_tag'] = torch.zeros(1).type(torch.bool).to(device_id)
             res['heading'] = torch.zeros([1,24]).to(device_id)
             res['h3d_log_variance'] = torch.zeros([1,1]).to(device_id)
-            res['velo'] = torch.zeros([1,self.num_velo]).to(device_id)
+            res['velocity'] = torch.zeros([1,self.num_velo]).to(device_id)
             res['attrs'] = torch.zeros([1,self.num_attrs]).to(device_id)
 
         return res

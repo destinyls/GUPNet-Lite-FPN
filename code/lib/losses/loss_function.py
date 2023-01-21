@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from torch.cuda.amp.autocast_mode import autocast
 from lib.helpers.decode_helper import _transpose_and_gather_feat
 from lib.losses.focal_loss import focal_loss_cornernet as focal_loss
 from lib.losses.uncertainty_loss import laplacian_aleatoric_uncertainty_loss
-import operator
 
 class Hierarchical_Task_Learning:
     def __init__(self,epoch0_loss,stat_epoch_nums=5):
@@ -17,9 +17,13 @@ class Hierarchical_Task_Learning:
                            'size2d_loss':[], 
                            'offset2d_loss':[],
                            'offset3d_loss':['size2d_loss','offset2d_loss'], 
-                           'size3d_loss':['size2d_loss','offset2d_loss'], 
-                           'heading_loss':['size2d_loss','offset2d_loss'], 
-                           'depth_loss':['size2d_loss','size3d_loss','offset2d_loss']}                                 
+                           'size3d_loss':['size2d_loss','offset2d_loss'],
+                           'heading_loss':['size2d_loss','offset2d_loss'],
+                           'velocity_loss':['size2d_loss','offset2d_loss'], 
+                           'attrs_loss':['size2d_loss', 'offset2d_loss'],
+                           'depth_loss':['size2d_loss','size3d_loss','offset2d_loss'],
+                           }                                 
+    
     def compute_weight(self,current_loss,epoch):
         T=140
         #compute initial weights
@@ -58,8 +62,7 @@ class GupnetLoss(nn.Module):
         super().__init__()
         self.stat = {}
         self.epoch = epoch
-
-
+        
     def forward(self, preds, targets, task_uncertainties=None):
 
         seg_loss = self.compute_segmentation_loss(preds, targets)
@@ -77,7 +80,6 @@ class GupnetLoss(nn.Module):
         self.stat['seg_loss'] = loss
         return loss
 
-
     def compute_bbox2d_loss(self, input, target):
         # compute size2d loss
         
@@ -88,16 +90,12 @@ class GupnetLoss(nn.Module):
         offset2d_input = extract_input_from_tensor(input['offset_2d'], target['indices'], target['mask_2d'])
         offset2d_target = extract_target_from_tensor(target['offset_2d'], target['mask_2d'])
         offset2d_loss = F.l1_loss(offset2d_input, offset2d_target, reduction='mean')
-
-
         loss = offset2d_loss + size2d_loss   
         self.stat['offset2d_loss'] = offset2d_loss
         self.stat['size2d_loss'] = size2d_loss
         return loss
 
-
-    def compute_bbox3d_loss(self, input, target, mask_type = 'mask_2d'):
-        
+    def compute_bbox3d_loss(self, input, target, mask_type = 'mask_2d'):        
         # compute depth loss        
         depth_input = input['depth'][input['train_tag']] 
         depth_input, depth_log_variance = depth_input[:, 0:1], depth_input[:, 1:2]
@@ -108,7 +106,22 @@ class GupnetLoss(nn.Module):
         offset3d_input = input['offset_3d'][input['train_tag']]  
         offset3d_target = extract_target_from_tensor(target['offset_3d'], target[mask_type])
         offset3d_loss = F.l1_loss(offset3d_input, offset3d_target, reduction='mean')
-        
+
+        # compute velocity loss
+        velocity_input = input['velocity'][input['train_tag']]  
+        velocity_target = extract_target_from_tensor(target['velocity'], target[mask_type])
+        velocity_loss = F.l1_loss(velocity_input, velocity_target, reduction='mean')
+
+        # compute velocity loss
+        attrs_input = input['attrs'][input['train_tag']]  
+        attrs_target = extract_target_from_tensor(target['attrs'], target[mask_type])
+        attrs_target = F.one_hot(attrs_target.long(), num_classes=9).float()        
+        attrs_loss = (F.binary_cross_entropy(
+            torch.sigmoid(attrs_input),
+            attrs_target,
+            reduction='none',
+        ).sum() / max(1.0, attrs_input.shape[0]))
+
         # compute size3d loss
         size3d_input = input['size_3d'][input['train_tag']] 
         size3d_target = extract_target_from_tensor(target['size_3d'], target[mask_type])
@@ -121,14 +134,13 @@ class GupnetLoss(nn.Module):
                                             target[mask_type],  ## NOTE
                                             target['heading_bin'],
                                             target['heading_res'])
-        loss = depth_loss + offset3d_loss + size3d_loss + heading_loss
-        
+        loss = depth_loss + offset3d_loss + size3d_loss + heading_loss + velocity_loss + attrs_loss
         self.stat['depth_loss'] = depth_loss
         self.stat['offset3d_loss'] = offset3d_loss
         self.stat['size3d_loss'] = size3d_loss
         self.stat['heading_loss'] = heading_loss
-        
-        
+        self.stat['velocity_loss'] = velocity_loss
+        self.stat['attrs_loss'] = attrs_loss
         return loss
 
 

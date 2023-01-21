@@ -47,7 +47,9 @@ def decode_detections(dets, info, calibs, cls_mean_size, threshold):
             locations = img_to_rect(x3d, y3d, depth, calibs[i]).reshape(-1)
             locations[1] += dimensions[0] / 2
 
-            preds.append([cls_id, alpha] + bbox + dimensions.tolist() + locations.tolist() + [ry, score])
+            velocity = dets[i, j, 36:38]
+            attrs = dets[i, j, 38]
+            preds.append([cls_id, alpha] + bbox + dimensions.tolist() + locations.tolist() + [ry, score] + velocity.tolist() + [attrs])
         results[info['img_id'][i]] = preds
     return results, preds
     
@@ -64,6 +66,9 @@ def extract_dets_from_outputs(outputs, K=50):
     depth = outputs['depth'].view(batch,K,-1)[:,:,0:1]
     size_3d = outputs['size_3d'].view(batch,K,-1)
     offset_3d = outputs['offset_3d'].view(batch,K,-1)
+    velocity = outputs['velocity'].view(batch,K,-1)
+    attrs = outputs['attrs'].view(batch,K,-1)    
+    attrs = torch.argmax(attrs, dim=-1, keepdim=False).view(batch,K,1)  
 
     heatmap= torch.clamp(heatmap.sigmoid_(), min=1e-4, max=1 - 1e-4)
 
@@ -91,8 +96,7 @@ def extract_dets_from_outputs(outputs, K=50):
 
     size_2d = _transpose_and_gather_feat(size_2d, inds)
     size_2d = size_2d.view(batch, K, 2)
-
-    detections = torch.cat([cls_ids, scores, xs2d, ys2d, size_2d, depth, heading, size_3d, xs3d, ys3d], dim=2)
+    detections = torch.cat([cls_ids, scores, xs2d, ys2d, size_2d, depth, heading, size_3d, xs3d, ys3d, velocity, attrs], dim=2)
 
     return detections
 

@@ -65,10 +65,12 @@ class Tester(object):
                     xyz[1] = xyz[1] - hwl[0] / 2
                     ry = bbox[12]
                     score = bbox[13]
-                    gt_bboxes_cam3d.append([xyz[0], xyz[1], xyz[2], hwl[2], hwl[0], hwl[1], ry, 0, 0])
+                    velocity = bbox[14:16]
+                    attrs = int(bbox[16])
+                    gt_bboxes_cam3d.append([xyz[0], xyz[1], xyz[2], hwl[2], hwl[0], hwl[1], ry, velocity[0], velocity[1]])
                     gt_labels_cam3d.append(cls_id)
                     gt_scores_cam3d.append(score)
-                    gt_attrs_3d.append(2)
+                    gt_attrs_3d.append(attrs)
                 gt_bboxes_cam3d = np.array(gt_bboxes_cam3d)
                 gt_scores_cam3d = np.array(gt_scores_cam3d)
                 gt_labels_cam3d = np.array(gt_labels_cam3d)
