@@ -2,7 +2,7 @@ random_seed: 444
 
 dataset:
   type: 'kitti'
-  root_dir: '/root/GUPNet-Lite-FPN/datasets'
+  root_dir: '/data/usr/lei.yang/GUPNet-Lite-FPN/datasets'
   batch_size: 4
   class_merging: False
   use_dontcare: False
@@ -15,7 +15,7 @@ dataset:
 
 dataset_nus:
   type: 'nuscenes-mmdet3d'
-  root_dir: '/root/GUPNet-Lite-FPN/datasets'
+  root_dir: '/data/usr/lei.yang//GUPNet-Lite-FPN/datasets'
   batch_size: 16
   class_merging: False
   use_dontcare: False
@@ -42,11 +42,11 @@ lr_scheduler:
   decay_list: [90, 120]
 
 trainer:
-  max_epoch: 200
+  max_epoch: 24
   eval_frequency: 200 # evaluation interval (in epoch)
   save_frequency: 10 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)
-  log_dir: 'log'
+  log_dir: '/model/log'
   output_dir: "eval_metrics_nuscenes_mono3d_001nd"
   #resume_model: '...'  
 tester:

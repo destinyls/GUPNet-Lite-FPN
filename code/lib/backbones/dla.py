@@ -295,10 +295,10 @@ class DLA(nn.Module):
 
             return x
 
-    def load_pretrained_model(self, data='imagenet', name='dla34', hash='ba72cf86'):
+    def load_pretrained_model(self, data='imagenet', name='dla34-ba72cf86.pth', hash='ba72cf86'):
         fc = self.fc
         if name.endswith('.pth'):
-            model_weights = torch.load(data + name)
+            model_weights = torch.load("/data/usr/lei.yang/GUPNet-Lite-FPN/code/ckpt/dla34-ba72cf86.pth")
         else:
             model_url = get_model_url(data, name, hash)
             model_weights = model_zoo.load_url(model_url)
@@ -315,7 +315,7 @@ def dla34(pretrained=False, **kwargs):  # DLA-34
                 [16, 32, 64, 128, 256, 512],
                 block=BasicBlock, **kwargs)
     if pretrained:
-        model.load_pretrained_model(data='imagenet', name='dla34', hash='ba72cf86')
+        model.load_pretrained_model(data='imagenet', name='dla34-ba72cf86.pth', hash='ba72cf86')
     return model
 
 

@@ -116,18 +116,10 @@ class ImageReactify(object):
         return degree * np.pi / 180
 
     def visualize(self, img, gt_bboxes_3d, cam2img, c=(0, 255, 0)):
-        print(img.shape, img.dtype)
-        print(gt_bboxes_3d.tensor.shape)
-        print(np.array(cam2img).shape)
-        
         gt_bboxes_3d = gt_bboxes_3d.tensor.numpy()
-        print(gt_bboxes_3d.shape)
-
         cam2img = np.array(cam2img)
         P = np.concatenate(
-            [cam2img, np.zeros((cam2img.shape[0], 1), dtype=np.float32)], axis=1)
-        
-        
+            [cam2img, np.zeros((cam2img.shape[0], 1), dtype=np.float32)], axis=1) 
         for i in range(gt_bboxes_3d.shape[0]):
             gt_box = gt_bboxes_3d[i]
             loc = gt_box[:3]

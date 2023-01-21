@@ -44,7 +44,7 @@ def main():
     logger = create_logger(os.path.join(cfg['trainer']['log_dir'],'train.log'))    
     
     #  build dataloader
-    train_loader, val_loader, test_loader = build_dataloader_custom(cfg['dataset'])
+    # train_loader, val_loader, test_loader = build_dataloader_custom(cfg['dataset'])
     nus_train_loader, nus_val_loader, nus_test_loader = build_dataloader_custom(cfg['dataset_nus'])
     '''
     img, P, coord_range, targets, info = nus_train_loader.dataset[150]    
@@ -74,7 +74,7 @@ def main():
                       model=model,
                       optimizer=optimizer,
                       train_loader=nus_train_loader,
-                      test_loader=val_loader,
+                      test_loader=nus_val_loader,
                       lr_scheduler=lr_scheduler,
                       warmup_lr_scheduler=warmup_lr_scheduler,
                       logger=logger)
