@@ -80,7 +80,7 @@ class NuScenesMonoDataset(CocoDataset):
                  box_type_3d='Camera',
                  eval_version='detection_cvpr_2019',
                  use_valid_flag=False,
-                 version='v1.0-mini',
+                 version='v1.0-trainval',
                  **kwargs):
         super().__init__(**kwargs)
         self.data_root = data_root

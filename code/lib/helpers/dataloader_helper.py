@@ -42,7 +42,7 @@ def build_dataloader_custom(cfg):
         cfg = Config.fromfile("lib/datasets/nus-mono3d.py")
         train_dataset = build_dataset(cfg.data.train)
         train_loader = DataLoader(dataset=train_dataset,
-                                  batch_size=6,
+                                  batch_size=8,
                                   num_workers=8,
                                   worker_init_fn=my_worker_init_fn,
                                   shuffle=True,

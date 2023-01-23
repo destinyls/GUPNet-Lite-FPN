@@ -44,7 +44,7 @@ lr_scheduler:
 trainer:
   max_epoch: 24
   eval_frequency: 200 # evaluation interval (in epoch)
-  save_frequency: 10 # checkpoint save interval (in epoch)
+  save_frequency: 500 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)
   log_dir: '/model/log'
   output_dir: "eval_metrics_nuscenes_mono3d_001nd"

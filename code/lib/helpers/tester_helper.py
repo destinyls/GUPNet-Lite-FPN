@@ -165,10 +165,3 @@ class Tester(object):
                 f.seek(-1, os.SEEK_END)
                 f.truncate()
         f.close()
-
-
-
-
-
-
-

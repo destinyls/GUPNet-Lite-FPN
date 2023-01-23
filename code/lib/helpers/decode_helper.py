@@ -102,8 +102,6 @@ def extract_dets_from_outputs(outputs, K=50):
 
 
 ############### auxiliary function ############
-
-
 def _nms(heatmap, kernel=3):
     padding = (kernel - 1) // 2
     heatmapmax = nn.functional.max_pool2d(heatmap, (kernel, kernel), stride=1, padding=padding)

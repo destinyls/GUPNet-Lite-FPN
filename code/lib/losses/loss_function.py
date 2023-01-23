@@ -117,7 +117,7 @@ class GupnetLoss(nn.Module):
         attrs_target = extract_target_from_tensor(target['attrs'], target[mask_type])
         attrs_target = F.one_hot(attrs_target.long(), num_classes=9).float()        
         attrs_loss = (F.binary_cross_entropy(
-            torch.sigmoid(attrs_input),
+            attrs_input,
             attrs_target,
             reduction='none',
         ).sum() / max(1.0, attrs_input.shape[0]))
@@ -142,9 +142,6 @@ class GupnetLoss(nn.Module):
         self.stat['velocity_loss'] = velocity_loss
         self.stat['attrs_loss'] = attrs_loss
         return loss
-
-
-
 
 ### ======================  auxiliary functions  =======================
 
