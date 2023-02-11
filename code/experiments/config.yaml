@@ -38,13 +38,14 @@ optimizer:
 
 lr_scheduler:
   warmup: True  # 5 epoches, cosine warmup, init_lir=0.00001 in default
+  warmup_epoch: 1
   decay_rate: 0.1
-  decay_list: [90, 120]
+  decay_list: [10, 15]
 
 trainer:
   max_epoch: 24
   eval_frequency: 200 # evaluation interval (in epoch)
-  save_frequency: 500 # checkpoint save interval (in epoch)
+  save_frequency: 2 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)
   log_dir: '/model/log'
   output_dir: "eval_metrics_nuscenes_mono3d_001nd"

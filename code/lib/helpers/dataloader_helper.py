@@ -42,8 +42,8 @@ def build_dataloader_custom(cfg):
         cfg = Config.fromfile("lib/datasets/nus-mono3d.py")
         train_dataset = build_dataset(cfg.data.train)
         train_loader = DataLoader(dataset=train_dataset,
-                                  batch_size=8,
-                                  num_workers=8,
+                                  batch_size=64,
+                                  num_workers=16,
                                   worker_init_fn=my_worker_init_fn,
                                   shuffle=True,
                                   pin_memory=True,
@@ -51,7 +51,7 @@ def build_dataloader_custom(cfg):
         
         val_dataset = build_dataset(cfg.data.val)
         val_loader = DataLoader(dataset=val_dataset,
-                                batch_size=1,
+                                batch_size=8,
                                 num_workers=8,
                                 worker_init_fn=my_worker_init_fn,
                                 shuffle=False,

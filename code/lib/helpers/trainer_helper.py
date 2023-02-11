@@ -13,6 +13,8 @@ from lib.helpers.decode_helper import extract_dets_from_outputs
 from lib.helpers.decode_helper import decode_detections
 from lib.evaluation import evaluate_python
 
+from mmdet3d.core.bbox import CameraInstance3DBoxes, get_box_type
+
 class Trainer(object):
     def __init__(self,
                  cfg,
@@ -167,6 +169,9 @@ class Trainer(object):
         results = {}
         disp_dict = {}
         progress_bar = tqdm.tqdm(total=len(self.test_loader), leave=True, desc='Evaluation Progress')
+        
+        results = {}
+        bboxes_list = list()
         with torch.no_grad():
             for batch_idx, (inputs, calibs, coord_ranges, targets, info) in enumerate(self.test_loader):
                 # load evaluation data and move data to current device.
@@ -181,19 +186,25 @@ class Trainer(object):
                 dets = dets.detach().cpu().numpy()
                 
                 # get corresponding calibs & transform tensor to numpy
-                calibs = [self.test_loader.dataset.get_calib(index)  for index in info['img_id']]
-                info = {key: val.detach().cpu().numpy() for key, val in info.items()}
+                # calibs = [self.test_loader.dataset.get_calib(index)  for index in info['img_id']]
+                calibs = calibs.detach().cpu().numpy() 
+                # info = {key: val.detach().cpu().numpy() for key, val in info.items()}
+                info = {key: val.detach().cpu().numpy() if isinstance(val, torch.Tensor) else val for key, val in info.items()}
                 cls_mean_size = self.test_loader.dataset.cls_mean_size
-                dets = decode_detections(dets = dets,
+                dets, bboxes = decode_detections(dets = dets,
                                         info = info,
                                         calibs = calibs,
                                         cls_mean_size=cls_mean_size,
                                         threshold = self.cfg_test['threshold'])                 
+                bboxes_list.append(bboxes)
                 results.update(dets)
                 progress_bar.update()
-            progress_bar.close()
-        self.save_results(results)
 
+            results = self.format_results(bboxes_list)
+            self.test_loader.dataset.evaluate(results)
+            progress_bar.close()
+        # self.save_results(results)
+        '''
         gt_label_path = "/root/Dataset/kitti_dataset/training/label_2/"
         imageset_txt = "/root/Dataset/kitti_dataset/ImageSets/val.txt"
         pred_label_path = os.path.join('./outputs', 'data')
@@ -208,7 +219,7 @@ class Trainer(object):
         mAP_3d_moderate = ret_dict['Car_3d_0.70/moderate']
         with open(os.path.join(evaluation_path, 'epoch_result_' + '{:07d}_{}.txt'.format(epoch, round(mAP_3d_moderate, 2))), "w") as f:
             f.write(result)
-                
+        '''      
     def save_results(self, results, output_dir='./outputs'):
         output_dir = os.path.join(output_dir, 'data')
         os.makedirs(output_dir, exist_ok=True)
@@ -224,4 +235,49 @@ class Trainer(object):
                 f.write('\n')
             f.close()        
         
+    def format_results(self, bboxes_list):
+        results = list()
+        for i in range(len(bboxes_list)):
+            bboxes = bboxes_list[i]
+            res = dict()
+            if len(bboxes) > 0:
+                gt_bboxes_cam3d, gt_labels_cam3d, gt_scores_cam3d, gt_attrs_3d = list(), list(), list(), list()
+                for bbox in bboxes:
+                    cls_id = bbox[0]
+                    hwl = bbox[6:9]
+                    xyz = bbox[9:12]
+                    xyz[1] = xyz[1] - hwl[0] / 2
+                    ry = bbox[12]
+                    score = bbox[13]
+                    velocity = bbox[14:16]
+                    attrs = int(bbox[16])
+                    gt_bboxes_cam3d.append([xyz[0], xyz[1], xyz[2], hwl[2], hwl[0], hwl[1], ry, velocity[0], velocity[1]])
+                    gt_labels_cam3d.append(cls_id)
+                    gt_scores_cam3d.append(score)
+                    gt_attrs_3d.append(attrs)
+                gt_bboxes_cam3d = np.array(gt_bboxes_cam3d)
+                gt_scores_cam3d = np.array(gt_scores_cam3d)
+                gt_labels_cam3d = np.array(gt_labels_cam3d)
+                gt_attrs_3d = np.array(gt_attrs_3d)
+            else:
+                gt_bboxes_cam3d = np.zeros((0, 9), dtype=np.float32)
+                gt_labels_cam3d = np.zeros((0, 1), dtype=np.float32)
+                gt_scores_cam3d = np.zeros((0, 1), dtype=np.float32)
+                gt_attrs_3d = np.zeros((0, 1), dtype=np.float32)
+
+            gt_bboxes_cam3d = torch.tensor(gt_bboxes_cam3d)
+            gt_labels_cam3d = torch.tensor(gt_labels_cam3d)
+            gt_scores_cam3d = torch.tensor(gt_scores_cam3d)
+            gt_attrs_3d = torch.tensor(gt_attrs_3d)
+            gt_bboxes_cam3d = CameraInstance3DBoxes(
+                gt_bboxes_cam3d,
+                box_dim=gt_bboxes_cam3d.shape[-1],
+                origin=(0.5, 1.0, 0.5))  
+            res['boxes_3d'] = gt_bboxes_cam3d
+            res['scores_3d'] = gt_scores_cam3d
+            res['labels_3d'] = gt_labels_cam3d
+            res['attrs_3d'] = gt_attrs_3d
+            results.append({"img_bbox": res})
+        return results
+
       

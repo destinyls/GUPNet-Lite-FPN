@@ -14,7 +14,7 @@ def build_lr_scheduler(cfg, optimizer, last_epoch):
     lr_scheduler = lr_sched.LambdaLR(optimizer, lr_lbmd, last_epoch=last_epoch)
     warmup_lr_scheduler = None
     if cfg['warmup']:
-        warmup_lr_scheduler = CosineWarmupLR(optimizer, num_epoch=5, init_lr=0.00001)
+        warmup_lr_scheduler = CosineWarmupLR(optimizer, num_epoch=cfg['warmup_epoch'], init_lr=0.00001)
     return lr_scheduler, warmup_lr_scheduler
 
 

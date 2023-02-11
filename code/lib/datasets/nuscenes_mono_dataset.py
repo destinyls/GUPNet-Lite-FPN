@@ -80,7 +80,7 @@ class NuScenesMonoDataset(CocoDataset):
                  box_type_3d='Camera',
                  eval_version='detection_cvpr_2019',
                  use_valid_flag=False,
-                 version='v1.0-trainval',
+                 version='v1.0-mini',
                  **kwargs):
         super().__init__(**kwargs)
         self.data_root = data_root
@@ -704,7 +704,6 @@ class NuScenesMonoDataset(CocoDataset):
                 file_name,
                 box_mode='camera',
                 show=show)
-
 
 def output_to_nusc_box(detection):
     """Convert the output to the box class in the nuScenes.

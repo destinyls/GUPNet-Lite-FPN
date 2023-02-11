@@ -119,7 +119,7 @@ class Tester(object):
             calibs = calibs.detach().cpu().numpy() 
             info = {key: val.detach().cpu().numpy() if isinstance(val, torch.Tensor) else val  for key, val in info.items()}
             cls_mean_size = self.data_loader.dataset.cls_mean_size
-            dets, bboxes  = decode_detections(dets = dets,
+            dets, bboxes = decode_detections(dets = dets,
                                      info = info,
                                      calibs = calibs,
                                      cls_mean_size=cls_mean_size,

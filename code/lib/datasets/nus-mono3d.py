@@ -1,5 +1,5 @@
 dataset_type = 'NuScenesMonoDataset'
-data_root = '/root/GUPNet-Lite-FPN/datasets/nuscenes/'
+data_root = '/data/usr/lei.yang/GUPNet-Lite-FPN/datasets/nuscenes/'
 class_names = [
     'car', 'truck', 'trailer', 'bus', 'construction_vehicle', 'bicycle',
     'motorcycle', 'pedestrian', 'traffic_cone', 'barrier'
