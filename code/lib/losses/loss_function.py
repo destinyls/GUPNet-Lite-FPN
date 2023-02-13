@@ -8,7 +8,7 @@ from lib.losses.focal_loss import focal_loss_cornernet as focal_loss
 from lib.losses.uncertainty_loss import laplacian_aleatoric_uncertainty_loss
 
 class Hierarchical_Task_Learning:
-    def __init__(self,epoch0_loss,stat_epoch_nums=5):
+    def __init__(self,epoch0_loss,stat_epoch_nums=1):
         self.index2term = [*epoch0_loss.keys()]
         self.term2index = {term:self.index2term.index(term) for term in self.index2term}  #term2index
         self.stat_epoch_nums = stat_epoch_nums
@@ -25,7 +25,7 @@ class Hierarchical_Task_Learning:
                            }                                 
     
     def compute_weight(self,current_loss,epoch):
-        T=140
+        T=24
         #compute initial weights
         loss_weights = {}
         eval_loss_input = torch.cat([_.unsqueeze(0) for _ in current_loss.values()]).unsqueeze(0)
@@ -34,7 +34,7 @@ class Hierarchical_Task_Learning:
                 loss_weights[term] = torch.tensor(1.0).to(current_loss[term].device)
             else:
                 loss_weights[term] = torch.tensor(0.0).to(current_loss[term].device) 
-        #update losses list
+        # update losses list
         if len(self.past_losses)==self.stat_epoch_nums:
             past_loss = torch.cat(self.past_losses)
             mean_diff = (past_loss[:-2]-past_loss[2:]).mean(0)

@@ -44,14 +44,7 @@ def main():
     logger = create_logger(os.path.join(cfg['trainer']['log_dir'],'train.log'))    
     
     #  build dataloader
-    # train_loader, val_loader, test_loader = build_dataloader_custom(cfg['dataset'])
     nus_train_loader, nus_val_loader, nus_test_loader = build_dataloader_custom(cfg['dataset_nus'])
-    '''
-    img, P, coord_range, targets, info = nus_train_loader.dataset[150]    
-    print("nus_train_loader: ", img.shape, P.shape, coord_range.shape, targets.keys(), info.keys())
-    img, P, coord_range, targets, info = train_loader.dataset[150]    
-    print("train_loader: ", img.shape, P.shape, coord_range.shape, targets.keys(), info.keys())
-    '''
     # build model
     model = build_model(cfg['model'], nus_train_loader.dataset.cls_mean_size)
 
@@ -66,7 +59,6 @@ def main():
 
     #  build optimizer
     optimizer = build_optimizer(cfg['optimizer'], model)
-
     # build lr & bnm scheduler
     lr_scheduler, warmup_lr_scheduler = build_lr_scheduler(cfg['lr_scheduler'], optimizer, last_epoch=-1)
 
