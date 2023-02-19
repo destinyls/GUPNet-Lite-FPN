@@ -40,9 +40,7 @@ class Trainer(object):
             assert os.path.exists(self.cfg_train['resume_model'])
             self.epoch = load_checkpoint(self.model, self.optimizer, self.cfg_train['resume_model'], self.logger, map_location=self.device)
             self.lr_scheduler.last_epoch = self.epoch - 1
-
         self.model = torch.nn.DataParallel(model).to(self.device)
-
 
     def train(self):
         start_epoch = self.epoch
@@ -79,8 +77,8 @@ class Trainer(object):
 
             # save trained model
             if (self.epoch % self.cfg_train['save_frequency']) == 0:
-                os.makedirs(self.cfg_train['log_dir']+'/checkpoints', exist_ok=True)
-                ckpt_name = os.path.join(self.cfg_train['log_dir']+'/checkpoints', 'checkpoint_epoch_%d' % self.epoch)
+                os.makedirs(self.cfg_train['output_dir'], exist_ok=True)
+                ckpt_name = os.path.join(self.cfg_train['output_dir'], 'checkpoint_epoch_%d' % self.epoch)
                 save_checkpoint(get_checkpoint_state(self.model, self.optimizer, self.epoch), ckpt_name, self.logger)
 
         return None
@@ -137,7 +135,6 @@ class Trainer(object):
             self.optimizer.step()
             
             trained_batch = batch_idx + 1
-
             # accumulate statistics
             for key in loss_terms.keys():
                 if key not in stat_dict.keys():
@@ -191,12 +188,14 @@ class Trainer(object):
                 results.update(dets)
                 progress_bar.update()
             progress_bar.close()
-        self.save_results(results)
 
-        gt_label_path = "/root/Dataset/kitti_dataset/training/label_2/"
-        imageset_txt = "/root/Dataset/kitti_dataset/ImageSets/val.txt"
-        pred_label_path = os.path.join('./outputs', 'data')
-        evaluation_path = os.path.join('./outputs', self.cfg_train['output_dir'])
+        
+        evaluation_path = self.cfg_train['output_dir']
+        pred_label_path = os.path.join(self.cfg_train['output_dir'], 'data')
+        gt_label_path = os.path.join(self.test_loader.dataset.root_dir, "KITTI/training/label_2/")
+        imageset_txt = os.path.join(self.test_loader.dataset.root_dir, "KITTI/ImageSets/val.txt")
+        self.save_results(results, output_dir=pred_label_path)        
+
         if not os.path.exists(evaluation_path):
             os.makedirs(evaluation_path)
         result, ret_dict = evaluate_python(label_path=gt_label_path, 
@@ -209,9 +208,7 @@ class Trainer(object):
             f.write(result)
                 
     def save_results(self, results, output_dir='./outputs'):
-        output_dir = os.path.join(output_dir, 'data')
         os.makedirs(output_dir, exist_ok=True)
-
         for img_id in results.keys():
             out_path = os.path.join(output_dir, '{:06d}.txt'.format(img_id))
             f = open(out_path, 'w')

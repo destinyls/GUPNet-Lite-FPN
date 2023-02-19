@@ -2,11 +2,12 @@ random_seed: 444
 
 dataset:
   type: 'kitti'
-  root_dir: '/root/GUPNet/datasets'
-  batch_size: 16
+  root_dir: '/root/GUPNet-Lite-FPN/datasets'
+  batch_size: 18
   class_merging: False
   use_dontcare: False
   use_3d_center: True
+  # writelist: ['Car','Pedestrian','Cyclist', 'Truck', 'Bus', 'Construction_Vehicle', 'Motorcycle', 'Traffic_Cone', 'Barrier', 'Trailer']
   writelist: ['Car','Pedestrian','Cyclist']
   random_flip: 0.5
   random_crop: 0.5
@@ -30,13 +31,14 @@ lr_scheduler:
 
 trainer:
   max_epoch: 200
-  eval_frequency: 5 # evaluation interval (in epoch)
-  save_frequency: 10 # checkpoint save interval (in epoch)
+  eval_frequency: 100 # evaluation interval (in epoch)
+  save_frequency: 5 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)
   log_dir: 'log'
-  output_dir: "eval_metrics_R40_005nd"
+  output_dir: "outputs/eval_metrics_R40_005nd"
   #resume_model: '...'  
 tester:
   threshold: 0.2  # confidence filter
+  output_dir: "outputs/eval_metrics_R40_005nd"
   #resume_model: '...'  
   

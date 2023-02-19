@@ -9,7 +9,6 @@ def get_objects_from_label(label_file):
     objects = [Object3d(line) for line in lines]
     return objects
 
-
 class Object3d(object):
     def __init__(self, line):
         label = line.strip().split(' ')
@@ -28,6 +27,7 @@ class Object3d(object):
         self.score = float(label[15]) if label.__len__() == 16 else -1.0
         self.level_str = None
         self.level = self.get_obj_level()
+        self.attr_id = 0.0
 
     def get_obj_level(self):
         height = float(self.box2d[3]) - float(self.box2d[1]) + 1

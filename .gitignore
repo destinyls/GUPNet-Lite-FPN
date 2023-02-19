@@ -1,3 +1,4 @@
 code/outputs/
 __pycache__/
+code/log/
 *.pyc

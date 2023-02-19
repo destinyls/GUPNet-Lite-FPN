@@ -89,7 +89,6 @@ class GupnetLoss(nn.Module):
         offset2d_target = extract_target_from_tensor(target['offset_2d'], target['mask_2d'])
         offset2d_loss = F.l1_loss(offset2d_input, offset2d_target, reduction='mean')
 
-
         loss = offset2d_loss + size2d_loss   
         self.stat['offset2d_loss'] = offset2d_loss
         self.stat['size2d_loss'] = size2d_loss

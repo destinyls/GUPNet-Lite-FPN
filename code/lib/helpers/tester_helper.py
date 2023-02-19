@@ -2,12 +2,15 @@ import os
 import tqdm
 import time
 
+import json
 import torch
 import numpy as np
 
 from lib.helpers.save_helper import load_checkpoint
 from lib.helpers.decode_helper import extract_dets_from_outputs
 from lib.helpers.decode_helper import decode_detections
+from lib.evaluation import evaluate_python
+
 class Tester(object):
     def __init__(self, cfg, model, data_loader, logger):
         self.cfg = cfg
@@ -44,7 +47,6 @@ class Tester(object):
             dets = extract_dets_from_outputs(outputs=outputs, K=50)
             dets = dets.detach().cpu().numpy()
 
-
             # get corresponding calibs & transform tensor to numpy
             calibs = [self.data_loader.dataset.get_calib(index)  for index in info['img_id']]
             info = {key: val.detach().cpu().numpy() for key, val in info.items()}
@@ -56,12 +58,30 @@ class Tester(object):
                                      threshold = self.cfg['threshold'])
             results.update(dets)
             progress_bar.update()
-        # save the result for evaluation.
-        self.save_results(results)
+
         progress_bar.close()
+        
+        # with open(os.path.join(self.cfg['output_dir'], "results.json"), 'w') as f:
+        #    json.dump(results, f)
+        # save the result for evaluation.
+        evaluation_path = self.cfg['output_dir']
+        pred_label_path = os.path.join(self.cfg['output_dir'], 'data')
+        gt_label_path = os.path.join(self.data_loader.dataset.root_dir, "KITTI/training/label_2/")
+        imageset_txt = os.path.join(self.data_loader.dataset.root_dir, "KITTI/ImageSets/val.txt")
+        self.save_results(results, output_dir=pred_label_path)        
+        if not os.path.exists(evaluation_path):
+            os.makedirs(evaluation_path)
+        result, ret_dict = evaluate_python(label_path=gt_label_path, 
+                                            result_path=pred_label_path,
+                                            label_split_file=imageset_txt,
+                                            current_class=["Car", "Pedestrian", "Cyclist"],
+                                            metric='R40')
+        mAP_3d_moderate = ret_dict['Car_3d_0.70/moderate']
+        with open(os.path.join(evaluation_path, 'epoch_result_' + '{}.txt'.format(round(mAP_3d_moderate, 2))), "w") as f:
+            f.write(result)
+        print(result)
 
     def save_results(self, results, output_dir='./outputs'):
-        output_dir = os.path.join(output_dir, 'data')
         os.makedirs(output_dir, exist_ok=True)
         for img_id in results.keys():
             out_path = os.path.join(output_dir, '{:06d}.txt'.format(img_id))

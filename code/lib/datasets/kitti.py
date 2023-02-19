@@ -20,11 +20,13 @@ import pdb
 class KITTI(data.Dataset):
     def __init__(self, root_dir, split, cfg):
         # basic configuration
-        self.num_classes = 3
         self.max_objs = 50
-        self.class_name = ['Pedestrian', 'Car', 'Cyclist']
-        self.cls2id = {'Pedestrian': 0, 'Car': 1, 'Cyclist': 2}
-        self.resolution = np.array([1280, 384])  # W * H
+        # self.class_name = ['Pedestrian', 'Car', 'Cyclist', 'Truck', 'Bus', 'Construction_Vehicle', 'Motorcycle', 'Traffic_Cone', 'Barrier', 'Trailer']        
+        # self.cls2id = {'Pedestrian':0, 'Car':1, 'Cyclist':2, 'Truck':3, 'Bus':4, 'Construction_Vehicle':5, 'Motorcycle':6, 'Traffic_Cone':7, 'Barrier':8, 'Trailer':9}
+        self.class_name = ['Pedestrian', 'Car', 'Cyclist']        
+        self.cls2id = {'Pedestrian':0, 'Car':1, 'Cyclist':2}
+        self.num_classes = len(self.class_name)
+        self.resolution = np.array([1280, 704])  # W * H
         self.use_3d_center = cfg['use_3d_center']
         self.writelist = cfg['writelist']
         if cfg['class_merging']:
@@ -37,10 +39,22 @@ class KITTI(data.Dataset):
          'Cyclist': np.array([1.76282397,0.59706367,1.73698127])] 
         ''' 
         ##l,w,h
+        '''
+        self.cls_mean_size = np.array([[1.75238862    ,0.67497987   , 0.71859957   ],
+                                       [1.70261363 ,1.93011023, 4.62714749],
+                                       [1.45396591    ,0.64213068   , 1.81598295   ],
+                                       [2.66681972, 2.39222535, 6.6901662],
+                                       [3.83792265, 2.9245, 11.2751989],
+                                       [2.41148905 ,2.61127737, 5.62583212],
+                                       [1.47223167    ,0.6907654   , 1.97166276   ],
+                                       [0.78313814, 0.46303736    ,0.44366985 ],
+                                       [1.04442954, 2.4459691,  0.59085476 ],
+                                       [3.76736538,    2.29530769, 11.42436538 ],
+                                       ])                              
+        '''
         self.cls_mean_size = np.array([[1.76255119    ,0.66068622   , 0.84422524   ],
                                        [1.52563191462 ,1.62856739989, 3.88311640418],
-                                       [1.73698127    ,0.59706367   , 1.76282397   ]])                              
-                              
+                                       [1.73698127    ,0.59706367   , 1.76282397   ]])                   
         # data split loading
         assert split in ['train', 'val', 'trainval', 'test']
         self.split = split
@@ -48,6 +62,7 @@ class KITTI(data.Dataset):
         self.idx_list = [x.strip() for x in open(split_dir).readlines()]
 
         # path configuration
+        self.root_dir = root_dir
         self.data_dir = os.path.join(root_dir, 'KITTI', 'testing' if split == 'test' else 'training')
         self.image_dir = os.path.join(self.data_dir, 'image_2')
         self.depth_dir = os.path.join(self.data_dir, 'depth')
@@ -69,7 +84,7 @@ class KITTI(data.Dataset):
         self.downsample = 4
         
     def get_image(self, idx):
-        img_file = os.path.join(self.image_dir, '%06d.png' % idx)
+        img_file = os.path.join(self.image_dir, '%06d.jpg' % idx)
         assert os.path.exists(img_file)
         return Image.open(img_file)    # (H, W, 3) RGB mode
 
@@ -149,6 +164,7 @@ class KITTI(data.Dataset):
             offset_3d = np.zeros((self.max_objs, 2), dtype=np.float32)
             height2d = np.zeros((self.max_objs, 1), dtype=np.float32)
             cls_ids = np.zeros((self.max_objs), dtype=np.int64)
+            attr_ids = np.zeros((self.max_objs), dtype=np.int64)
             indices = np.zeros((self.max_objs), dtype=np.int64)
             mask_2d = np.zeros((self.max_objs), dtype=np.uint8)
             mask_3d = np.zeros((self.max_objs), dtype=np.uint8)
@@ -195,6 +211,7 @@ class KITTI(data.Dataset):
     
                 cls_id = self.cls2id[objects[i].cls_type]
                 cls_ids[i] = cls_id
+                attr_ids[i] = int(objects[i].attr_id)
                 draw_umich_gaussian(heatmap[cls_id], center_heatmap, radius)
     
                 # encoding 2d/3d offset & 2d size
@@ -231,6 +248,7 @@ class KITTI(data.Dataset):
                    'heading_bin': heading_bin,
                    'heading_res': heading_res,
                    'cls_ids': cls_ids,
+                   'attr_ids': attr_ids,
                    'mask_2d': mask_2d} 
         else:
             targets = {}
@@ -240,9 +258,6 @@ class KITTI(data.Dataset):
                 'img_size': img_size,
                 'bbox_downsample_ratio': img_size/features_size}   
         return inputs, calib.P2, coord_range, targets, info   #calib.P2
-
-
-
 
 
 if __name__ == '__main__':
@@ -265,7 +280,6 @@ if __name__ == '__main__':
         heatmap = targets['heatmap'][0]  # image id
         heatmap = Image.fromarray(heatmap[0].numpy() * 255)  # cats id
         heatmap.show()
-
         break
 
 
