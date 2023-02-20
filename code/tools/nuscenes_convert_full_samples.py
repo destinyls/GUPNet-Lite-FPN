@@ -15,10 +15,10 @@ from nuscenes.utils import splits
 
 start_index = 0
 data_root = '/home/tsing-adept/datasets/nuScenes/'
-output_root = '/home/yanglei/Datasets/nuscenes-kitti'
+output_root = '/home/yanglei/Datasets/nuscenes-mini-kitti'
 img_output_root = os.path.join(output_root, 'training/image_2/')
-# label_output_root = os.path.join(output_root, 'training/label_2/')
-label_output_root = os.path.join(output_root, 'training/label_2_attrs/')
+label_output_root = os.path.join(output_root, 'training/label_2/')
+# label_output_root = os.path.join(output_root, 'training/label_2_attrs/')
 calib_output_root = os.path.join(output_root, 'training/calib/')
 imagesets_output_root = os.path.join(output_root, 'ImageSets/')
 
@@ -66,7 +66,7 @@ category_reflection = \
 {
     'human.pedestrian.adult': 'Pedestrian',
     'human.pedestrian.child': 'Pedestrian',
-    'human.pedestrian.wheelchair': 'DontCare',
+    'human.pedestrian.wheelchair': 'WheelChair',
     'human.pedestrian.stroller': 'DontCare',
     'human.pedestrian.personal_mobility': 'DontCare',
     'human.pedestrian.police_officer': 'Pedestrian',
@@ -88,7 +88,6 @@ category_reflection = \
     'movable_object.debris': 'DontCare',
     'static_object.bicycle_rack': 'DontCare', 
 }
-
 
 def get_available_scenes(nusc):
     """Get available scenes from the input nuscenes class.
@@ -200,8 +199,8 @@ def label_generation(output_label_file, box_list):
                     output_f.write(line)
 
 if __name__ == '__main__':
-    sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
-    # sensor_list = ['CAM_FRONT']
+    # sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
+    sensor_list = ['CAM_FRONT']
     version = 'v1.0-mini'
     available_vers = ['v1.0-trainval', 'v1.0-test', 'v1.0-mini']
     nusc = NuScenes(version=version, dataroot=data_root, verbose=True)
@@ -254,7 +253,7 @@ if __name__ == '__main__':
         for present_sensor in sensor_list:
             # each sensor_data corresponds to one specific image in the dataset
             sensor_data = nusc.get('sample_data', present_sample['data'][present_sensor])
-            data_path, box_list, cam_intrinsic = nusc.get_sample_data(present_sample['data'][present_sensor], BoxVisibility.ALL)
+            data_path, box_list, cam_intrinsic = nusc.get_sample_data(present_sample['data'][present_sensor], BoxVisibility.ANY)
 
             img_file = data_root + sensor_data['filename']
             seqname = str(frame_counter).zfill(6)
@@ -297,6 +296,10 @@ if __name__ == '__main__':
             f.write(frame_name)
             f.write("\n")
     with open(os.path.join(imagesets_output_root, "val.txt"),'w') as f:
+        for frame_name in val_split:
+            f.write(frame_name)
+            f.write("\n")
+    with open(os.path.join(imagesets_output_root, "test.txt"),'w') as f:
         for frame_name in val_split:
             f.write(frame_name)
             f.write("\n")

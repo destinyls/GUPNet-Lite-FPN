@@ -43,8 +43,8 @@ class Tester(object):
             coord_ranges = coord_ranges.to(self.device)
 
             # the outputs of centernet
-            outputs = self.model(inputs,coord_ranges,calibs,K=50,mode='test')
-            dets = extract_dets_from_outputs(outputs=outputs, K=50)
+            outputs = self.model(inputs,coord_ranges,calibs,K=self.data_loader.dataset.max_objs, mode='test')
+            dets = extract_dets_from_outputs(outputs=outputs, K=self.data_loader.dataset.max_objs)
             dets = dets.detach().cpu().numpy()
 
             # get corresponding calibs & transform tensor to numpy
@@ -67,7 +67,7 @@ class Tester(object):
         evaluation_path = self.cfg['output_dir']
         pred_label_path = os.path.join(self.cfg['output_dir'], 'data')
         gt_label_path = os.path.join(self.data_loader.dataset.root_dir, "KITTI/training/label_2/")
-        imageset_txt = os.path.join(self.data_loader.dataset.root_dir, "KITTI/ImageSets/val.txt")
+        imageset_txt = os.path.join(self.data_loader.dataset.root_dir, "KITTI/ImageSets/train.txt")
         self.save_results(results, output_dir=pred_label_path)        
         if not os.path.exists(evaluation_path):
             os.makedirs(evaluation_path)

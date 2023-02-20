@@ -1,4 +1,5 @@
 import os
+import cv2
 import numpy as np
 import torch
 import torch.utils.data as data
@@ -20,26 +21,23 @@ import pdb
 class KITTI(data.Dataset):
     def __init__(self, root_dir, split, cfg):
         # basic configuration
-        self.max_objs = 50
+        self.max_objs = cfg['max_objs']
         # self.class_name = ['Pedestrian', 'Car', 'Cyclist', 'Truck', 'Bus', 'Construction_Vehicle', 'Motorcycle', 'Traffic_Cone', 'Barrier', 'Trailer']        
         # self.cls2id = {'Pedestrian':0, 'Car':1, 'Cyclist':2, 'Truck':3, 'Bus':4, 'Construction_Vehicle':5, 'Motorcycle':6, 'Traffic_Cone':7, 'Barrier':8, 'Trailer':9}
-        self.class_name = ['Pedestrian', 'Car', 'Cyclist']        
-        self.cls2id = {'Pedestrian':0, 'Car':1, 'Cyclist':2}
-        self.num_classes = len(self.class_name)
-        self.resolution = np.array([1280, 704])  # W * H
-        self.use_3d_center = cfg['use_3d_center']
         self.writelist = cfg['writelist']
+        self.class_name = cfg['writelist']
+        self.cls2id = dict()
+        for idx in range(len(self.class_name)):
+            self.cls2id[self.class_name[idx]] = idx
+        self.num_classes = len(self.class_name)
+        self.resolution = np.array([1280, 384])  # W * H
+        self.use_3d_center = cfg['use_3d_center']
         if cfg['class_merging']:
             self.writelist.extend(['Van', 'Truck'])
         if cfg['use_dontcare']:
             self.writelist.extend(['DontCare'])
-        '''    
-        ['Car': np.array([3.88311640418,1.62856739989,1.52563191462]),
-         'Pedestrian': np.array([0.84422524,0.66068622,1.76255119]),
-         'Cyclist': np.array([1.76282397,0.59706367,1.73698127])] 
-        ''' 
+
         ##l,w,h
-        '''
         self.cls_mean_size = np.array([[1.75238862    ,0.67497987   , 0.71859957   ],
                                        [1.70261363 ,1.93011023, 4.62714749],
                                        [1.45396591    ,0.64213068   , 1.81598295   ],
@@ -50,11 +48,9 @@ class KITTI(data.Dataset):
                                        [0.78313814, 0.46303736    ,0.44366985 ],
                                        [1.04442954, 2.4459691,  0.59085476 ],
                                        [3.76736538,    2.29530769, 11.42436538 ],
-                                       ])                              
-        '''
-        self.cls_mean_size = np.array([[1.76255119    ,0.66068622   , 0.84422524   ],
-                                       [1.52563191462 ,1.62856739989, 3.88311640418],
-                                       [1.73698127    ,0.59706367   , 1.76282397   ]])                   
+                                       ])  
+        self.cls_mean_size = self.cls_mean_size[:self.num_classes] 
+                         
         # data split loading
         assert split in ['train', 'val', 'trainval', 'test']
         self.split = split
@@ -84,7 +80,7 @@ class KITTI(data.Dataset):
         self.downsample = 4
         
     def get_image(self, idx):
-        img_file = os.path.join(self.image_dir, '%06d.jpg' % idx)
+        img_file = os.path.join(self.image_dir, '%06d.png' % idx)
         assert os.path.exists(img_file)
         return Image.open(img_file)    # (H, W, 3) RGB mode
 
@@ -133,6 +129,7 @@ class KITTI(data.Dataset):
                             resample=Image.BILINEAR)
         coord_range = np.array([center-crop_size/2,center+crop_size/2]).astype(np.float32)                   
         # image encoding
+        # img_demo = np.array(img)
         img = np.array(img).astype(np.float32) / 255.0
         img = (img - self.mean) / self.std
         img = img.transpose(2, 0, 1)  # C * H * W
@@ -177,12 +174,14 @@ class KITTI(data.Dataset):
                 # filter inappropriate samples by difficulty
                 if objects[i].level_str == 'UnKnown' or objects[i].pos[-1] < 2:
                     continue
-    
+
                 # process 2d bbox & get 2d center
                 bbox_2d = objects[i].box2d.copy()
                 # add affine transformation for 2d boxes.
                 bbox_2d[:2] = affine_transform(bbox_2d[:2], trans)
                 bbox_2d[2:] = affine_transform(bbox_2d[2:], trans)
+                # cv2.rectangle(img_demo, (int(bbox_2d[0]), int(bbox_2d[1])), (int(bbox_2d[2]), int(bbox_2d[3])), (0,0,255), 2)
+
                 # modify the 2d bbox according to pre-compute downsample ratio
                 bbox_2d[:] /= self.downsample
     
@@ -192,7 +191,9 @@ class KITTI(data.Dataset):
                 center_3d = center_3d.reshape(-1, 3)  # shape adjustment (N, 3)
                 center_3d, _ = calib.rect_to_img(center_3d)  # project 3D center to image plane
                 center_3d = center_3d[0]  # shape adjustment
+                
                 center_3d = affine_transform(center_3d.reshape(-1), trans)
+                # cv2.circle(img_demo, (int(center_3d[0]), int(center_3d[1])), 3, (255, 0, 0), -1)
                 center_3d /= self.downsample      
             
                 # generate the center of gaussian heatmap [optional: 3d center or 2d center]
@@ -205,10 +206,12 @@ class KITTI(data.Dataset):
                 radius = gaussian_radius((w, h))
                 radius = max(0, int(radius))
     
+                '''
                 if objects[i].cls_type in ['Van', 'Truck', 'DontCare']:
                     draw_umich_gaussian(heatmap[1], center_heatmap, radius)
                     continue
-    
+                '''
+
                 cls_id = self.cls2id[objects[i].cls_type]
                 cls_ids[i] = cls_id
                 attr_ids[i] = int(objects[i].attr_id)
@@ -223,7 +226,7 @@ class KITTI(data.Dataset):
                 depth[i] = objects[i].pos[-1]
     
                 # encoding heading angle
-                #heading_angle = objects[i].alpha
+                # heading_angle = objects[i].alpha
                 heading_angle = calib.ry2alpha(objects[i].ry, (objects[i].box2d[0]+objects[i].box2d[2])/2)
                 if heading_angle > np.pi:  heading_angle -= 2 * np.pi  # check range
                 if heading_angle < -np.pi: heading_angle += 2 * np.pi
@@ -235,7 +238,7 @@ class KITTI(data.Dataset):
                 mean_size = self.cls_mean_size[self.cls2id[objects[i].cls_type]]
                 size_3d[i] = src_size_3d[i] - mean_size
 
-                #objects[i].trucation <=0.5 and objects[i].occlusion<=2 and (objects[i].box2d[3]-objects[i].box2d[1])>=25:
+                # objects[i].trucation <=0.5 and objects[i].occlusion<=2 and (objects[i].box2d[3]-objects[i].box2d[1])>=25:
                 if objects[i].trucation <=0.5 and objects[i].occlusion<=2:    
                     mask_2d[i] = 1           
             targets = {'depth': depth,
@@ -253,6 +256,7 @@ class KITTI(data.Dataset):
         else:
             targets = {}
         # collect return data
+        # cv2.imwrite(os.path.join("debug", str(index) + ".jpg"), img_demo)
         inputs = img
         info = {'img_id': index,
                 'img_size': img_size,
@@ -274,7 +278,6 @@ if __name__ == '__main__':
         img = (img * dataset.std + dataset.mean) * 255
         img = Image.fromarray(img.astype(np.uint8))
         img.show()
-        # print(targets['size_3d'][0][0])
 
         # test heatmap
         heatmap = targets['heatmap'][0]  # image id

@@ -50,7 +50,7 @@ def decode_detections(dets, info, calibs, cls_mean_size, threshold):
     return results
     
 #two stage style    
-def extract_dets_from_outputs(outputs, K=50):
+def extract_dets_from_outputs(outputs, K=100):
     # get src outputs
     heatmap = outputs['heatmap']
     size_2d = outputs['size_2d']
@@ -105,7 +105,7 @@ def _nms(heatmap, kernel=3):
     return heatmap * keep
 
 
-def _topk(heatmap, K=50):
+def _topk(heatmap, K=100):
     batch, cat, height, width = heatmap.size()
 
     # batch * cls_ids * 50

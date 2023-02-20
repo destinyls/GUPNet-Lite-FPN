@@ -55,7 +55,7 @@ def main():
         if args.ckpt != "":
             model_state = torch.load(args.ckpt)["model_state"]
             model.load_state_dict(model_state)
-        tester = Tester(cfg['tester'], model, val_loader, logger)
+        tester = Tester(cfg['tester'], model, train_loader, logger)
         tester.test()
         return
 

@@ -9,6 +9,7 @@ dataset:
   use_3d_center: True
   # writelist: ['Car','Pedestrian','Cyclist', 'Truck', 'Bus', 'Construction_Vehicle', 'Motorcycle', 'Traffic_Cone', 'Barrier', 'Trailer']
   writelist: ['Car','Pedestrian','Cyclist']
+  max_objs: 50
   random_flip: 0.5
   random_crop: 0.5
   scale: 0.4
@@ -30,15 +31,15 @@ lr_scheduler:
   decay_list: [90, 120]
 
 trainer:
-  max_epoch: 200
-  eval_frequency: 100 # evaluation interval (in epoch)
-  save_frequency: 5 # checkpoint save interval (in epoch)
+  max_epoch: 100
+  eval_frequency: 200 # evaluation interval (in epoch)
+  save_frequency: 10 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)
   log_dir: 'log'
-  output_dir: "outputs/eval_metrics_R40_005nd"
+  output_dir: "outputs/gupnet_nuscenes_baseline_001nd"
   #resume_model: '...'  
 tester:
   threshold: 0.2  # confidence filter
-  output_dir: "outputs/eval_metrics_R40_005nd"
+  output_dir: "outputs/gupnet_nuscenes_baseline_001nd"
   #resume_model: '...'  
   

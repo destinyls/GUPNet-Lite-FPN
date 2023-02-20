@@ -1,4 +1,7 @@
 code/outputs/
+code/debug/
 __pycache__/
 code/log/
 *.pyc
+*.out
+../datasets/KITTI

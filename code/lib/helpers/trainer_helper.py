@@ -171,9 +171,9 @@ class Trainer(object):
                 coord_ranges = coord_ranges.to(self.device)
     
                 # the outputs of centernet
-                outputs = self.model(inputs,coord_ranges,calibs,K=50,mode='val')
+                outputs = self.model(inputs,coord_ranges,calibs,K=self.test_loader.dataset.max_objs, mode='val')
 
-                dets = extract_dets_from_outputs(outputs, K=50)
+                dets = extract_dets_from_outputs(outputs, K=self.test_loader.dataset.max_objs)
                 dets = dets.detach().cpu().numpy()
                 
                 # get corresponding calibs & transform tensor to numpy

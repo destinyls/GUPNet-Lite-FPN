@@ -168,7 +168,6 @@ class GUPNet(nn.Module):
 
             depth_net_out = torch.cat([(1. / (depth_net_out[:,0:1].sigmoid() + 1e-6) - 1.)+depth_geo.unsqueeze(-1),depth_net_log_std],-1)
 
-
             res['train_tag'] = torch.ones(num_masked_bin).type(torch.bool).to(device_id)
             res['heading'] = self.heading(roi_feature_masked)[:,:,0,0]
             res['depth'] = depth_net_out
