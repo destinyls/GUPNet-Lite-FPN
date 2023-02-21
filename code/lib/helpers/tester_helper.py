@@ -9,7 +9,9 @@ import numpy as np
 from lib.helpers.save_helper import load_checkpoint
 from lib.helpers.decode_helper import extract_dets_from_outputs
 from lib.helpers.decode_helper import decode_detections
-from lib.evaluation import evaluate_python
+
+from lib.evaluation.kitti_utils.eval import kitti_eval
+from lib.evaluation.kitti_utils import kitti_common as kitti
 
 class Tester(object):
     def __init__(self, cfg, model, data_loader, logger):
@@ -67,18 +69,20 @@ class Tester(object):
         evaluation_path = self.cfg['output_dir']
         pred_label_path = os.path.join(self.cfg['output_dir'], 'data')
         gt_label_path = os.path.join(self.data_loader.dataset.root_dir, "KITTI/training/label_2/")
-        imageset_txt = os.path.join(self.data_loader.dataset.root_dir, "KITTI/ImageSets/train.txt")
         self.save_results(results, output_dir=pred_label_path)        
         if not os.path.exists(evaluation_path):
             os.makedirs(evaluation_path)
-        result, ret_dict = evaluate_python(label_path=gt_label_path, 
-                                            result_path=pred_label_path,
-                                            label_split_file=imageset_txt,
-                                            current_class=["Car", "Pedestrian", "Cyclist"],
-                                            metric='R40')
-        mAP_3d_moderate = ret_dict['Car_3d_0.70/moderate']
-        with open(os.path.join(evaluation_path, 'epoch_result_' + '{}.txt'.format(round(mAP_3d_moderate, 2))), "w") as f:
-            f.write(result)
+        pred_annos, image_ids = kitti.get_label_annos(pred_label_path, return_ids=True)
+        gt_annos = kitti.get_label_annos(gt_label_path, image_ids=image_ids)
+        result, ret_dict = kitti_eval(gt_annos, pred_annos, ["Car", "Pedestrian", "Cyclist"])
+        print(result)
+        if ret_dict is not None:
+            mAP_3d_moderate = ret_dict["KITTI/Car_3D_moderate_strict"]
+            val_mAP.append(mAP_3d_moderate)
+            with open(os.path.join(checkpoints_path, "val_mAP.json"),'w') as file_object:
+                json.dump(val_mAP, file_object)
+            with open(os.path.join(checkpoints_path, 'epoch_result_{:07d}_{}.txt'.format(iteration, round(mAP_3d_moderate, 2))), "w") as f:
+                f.write(result)
         print(result)
 
     def save_results(self, results, output_dir='./outputs'):
@@ -109,6 +113,22 @@ class Tester(object):
                 f.seek(-1, os.SEEK_END)
                 f.truncate()
         f.close()
+        
+if __name__ == "__main__":
+    gt_label_path = "/root/Dataset/kitti_dataset/training/label_2"
+
+    pred_annos, image_ids = kitti.get_label_annos(gt_label_path, return_ids=True)
+    gt_annos = kitti.get_label_annos(gt_label_path, image_ids=image_ids)
+    result, ret_dict = kitti_eval(gt_annos, pred_annos, ["Car", "Pedestrian", "Cyclist"])
+    print(result)
+    if ret_dict is not None:
+        mAP_3d_moderate = ret_dict["KITTI/Car_3D_moderate_strict"]
+        val_mAP.append(mAP_3d_moderate)
+        with open(os.path.join(checkpoints_path, "val_mAP.json"),'w') as file_object:
+            json.dump(val_mAP, file_object)
+        with open(os.path.join(checkpoints_path, 'epoch_result_{:07d}_{}.txt'.format(iteration, round(mAP_3d_moderate, 2))), "w") as f:
+            f.write(result)
+    print(result)
 
 
 

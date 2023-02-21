@@ -104,7 +104,6 @@ class NuScenesMonoDataset(CocoDataset):
                 use_map=False,
                 use_external=False)
         
-
     def pre_pipeline(self, results):
         """Initialization before data preparation.
 
