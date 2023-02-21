@@ -30,7 +30,7 @@ class KITTI(data.Dataset):
         for idx in range(len(self.class_name)):
             self.cls2id[self.class_name[idx]] = idx
         self.num_classes = len(self.class_name)
-        self.resolution = np.array([1280, 384])  # W * H
+        self.resolution = np.array([1600, 896])  # W * H
         self.use_3d_center = cfg['use_3d_center']
         if cfg['class_merging']:
             self.writelist.extend(['Van', 'Truck'])
@@ -55,7 +55,7 @@ class KITTI(data.Dataset):
         assert split in ['train', 'val', 'trainval', 'test']
         self.split = split
         split_dir = os.path.join(root_dir, 'KITTI', 'ImageSets', split + '.txt')
-        self.idx_list = [x.strip() for x in open(split_dir).readlines()]
+        self.idx_list = [x.strip() for x in open(split_dir).readlines()] * 2
 
         # path configuration
         self.root_dir = root_dir
