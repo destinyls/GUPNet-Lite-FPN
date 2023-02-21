@@ -11,7 +11,9 @@ from lib.helpers.save_helper import load_checkpoint
 from lib.losses.loss_function import GupnetLoss,Hierarchical_Task_Learning
 from lib.helpers.decode_helper import extract_dets_from_outputs
 from lib.helpers.decode_helper import decode_detections
-from lib.evaluation import evaluate_python
+
+from lib.evaluation.kitti_utils.eval import kitti_eval
+from lib.evaluation.kitti_utils import kitti_common as kitti
 
 class Trainer(object):
     def __init__(self,
@@ -198,14 +200,16 @@ class Trainer(object):
 
         if not os.path.exists(evaluation_path):
             os.makedirs(evaluation_path)
-        result, ret_dict = evaluate_python(label_path=gt_label_path, 
-                                            result_path=pred_label_path,
-                                            label_split_file=imageset_txt,
-                                            current_class=["Car", "Pedestrian", "Cyclist"],
-                                            metric='R40')
-        mAP_3d_moderate = ret_dict['Car_3d_0.70/moderate']
-        with open(os.path.join(evaluation_path, 'epoch_result_' + '{:07d}_{}.txt'.format(epoch, round(mAP_3d_moderate, 2))), "w") as f:
-            f.write(result)
+            
+        pred_annos, image_ids = kitti.get_label_annos(pred_label_path, return_ids=True)
+        gt_annos = kitti.get_label_annos(gt_label_path, image_ids=image_ids)
+        result, ret_dict = kitti_eval(gt_annos, pred_annos, ["Car", "Pedestrian", "Cyclist"])
+        print(result)
+        if ret_dict is not None:
+            mAP_3d_moderate = ret_dict["KITTI/Car_3D_moderate_strict"]
+            with open(os.path.join(checkpoints_path, 'epoch_result_{:07d}_{}.txt'.format(iteration, round(mAP_3d_moderate, 2))), "w") as f:
+                f.write(result)
+        print(result)
                 
     def save_results(self, results, output_dir='./outputs'):
         os.makedirs(output_dir, exist_ok=True)

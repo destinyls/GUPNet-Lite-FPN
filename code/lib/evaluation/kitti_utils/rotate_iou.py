@@ -4,8 +4,6 @@
 # Author: yanyan, scrin@foxmail.com
 #####################
 import math
-import pdb
-
 import numba
 import numpy as np
 from numba import cuda
@@ -14,6 +12,7 @@ from numba import cuda
 @numba.jit(nopython=True)
 def div_up(m, n):
     return m // n + (m % n > 0)
+
 
 @cuda.jit('(float32[:], float32[:], float32[:])', device=True, inline=True)
 def trangle_area(a, b, c):
@@ -75,7 +74,6 @@ def sort_vertex_in_convex_polygon(int_pts, num_of_inter):
     '(float32[:], float32[:], int32, int32, float32[:])',
     device=True,
     inline=True)
-
 def line_segment_intersection(pts1, pts2, i, j, temp_pts):
     A = cuda.local.array((2, ), dtype=numba.float32)
     B = cuda.local.array((2, ), dtype=numba.float32)
@@ -224,14 +222,22 @@ def rbbox_to_corners(corners, rbbox):
     corners_y[2] = y_d / 2
     corners_y[3] = -y_d / 2
     for i in range(4):
-        corners[2 *
-                i] = a_cos * corners_x[i] + a_sin * corners_y[i] + center_x
-        corners[2 * i
-                + 1] = -a_sin * corners_x[i] + a_cos * corners_y[i] + center_y
+        corners[2 * i] = a_cos * corners_x[i] + a_sin * corners_y[i] + center_x
+        corners[2 * i +
+                1] = -a_sin * corners_x[i] + a_cos * corners_y[i] + center_y
 
 
 @cuda.jit('(float32[:], float32[:])', device=True, inline=True)
 def inter(rbbox1, rbbox2):
+    """Compute intersection of two rotated boxes.
+
+    Args:
+        rbox1 (np.ndarray, shape=[5]): Rotated 2d box.
+        rbox2 (np.ndarray, shape=[5]): Rotated 2d box.
+
+    Returns:
+        float: Intersection of two rotated boxes.
+    """
     corners1 = cuda.local.array((8, ), dtype=numba.float32)
     corners2 = cuda.local.array((8, ), dtype=numba.float32)
     intersection_corners = cuda.local.array((16, ), dtype=numba.float32)
@@ -249,6 +255,19 @@ def inter(rbbox1, rbbox2):
 
 @cuda.jit('(float32[:], float32[:], int32)', device=True, inline=True)
 def devRotateIoUEval(rbox1, rbox2, criterion=-1):
+    """Compute rotated iou on device.
+
+    Args:
+        rbox1 (np.ndarray, shape=[5]): Rotated 2d box.
+        rbox2 (np.ndarray, shape=[5]): Rotated 2d box.
+        criterion (int, optional): Indicate different type of iou.
+            -1 indicate `area_inter / (area1 + area2 - area_inter)`,
+            0 indicate `area_inter / area1`,
+            1 indicate `area_inter / area2`.
+
+    Returns:
+        float: iou between two input boxes.
+    """
     area1 = rbox1[2] * rbox1[3]
     area2 = rbox2[2] * rbox2[3]
     area_inter = inter(rbox1, rbox2)
@@ -261,8 +280,29 @@ def devRotateIoUEval(rbox1, rbox2, criterion=-1):
     else:
         return area_inter
 
-@cuda.jit('(int64, int64, float32[:], float32[:], float32[:], int32)', fastmath=False)
-def rotate_iou_kernel_eval(N, K, dev_boxes, dev_query_boxes, dev_iou, criterion=-1):
+
+@cuda.jit(
+    '(int64, int64, float32[:], float32[:], float32[:], int32)',
+    fastmath=False)
+def rotate_iou_kernel_eval(N,
+                           K,
+                           dev_boxes,
+                           dev_query_boxes,
+                           dev_iou,
+                           criterion=-1):
+    """Kernel of computing rotated iou.
+
+    Args:
+        N (int): The number of boxes.
+        K (int): The number of query boxes.
+        dev_boxes (np.ndarray): Boxes on device.
+        dev_query_boxes (np.ndarray): Query boxes on device.
+        dev_iou (np.ndarray): Computed iou to return.
+        criterion (int, optional): Indicate different type of iou.
+            -1 indicate `area_inter / (area1 + area2 - area_inter)`,
+            0 indicate `area_inter / area1`,
+            1 indicate `area_inter / area2`.
+    """
     threadsPerBlock = 8 * 8
     row_start = cuda.blockIdx.x
     col_start = cuda.blockIdx.y
@@ -286,31 +326,35 @@ def rotate_iou_kernel_eval(N, K, dev_boxes, dev_query_boxes, dev_iou, criterion=
         block_boxes[tx * 5 + 2] = dev_boxes[dev_box_idx * 5 + 2]
         block_boxes[tx * 5 + 3] = dev_boxes[dev_box_idx * 5 + 3]
         block_boxes[tx * 5 + 4] = dev_boxes[dev_box_idx * 5 + 4]
-    
     cuda.syncthreads()
-
     if tx < row_size:
         for i in range(col_size):
-            offset = row_start * threadsPerBlock * K + col_start * threadsPerBlock + tx * K + i
+            offset = (
+                row_start * threadsPerBlock * K + col_start * threadsPerBlock +
+                tx * K + i)
             dev_iou[offset] = devRotateIoUEval(block_qboxes[i * 5:i * 5 + 5],
-                                           block_boxes[tx * 5:tx * 5 + 5], criterion)
+                                               block_boxes[tx * 5:tx * 5 + 5],
+                                               criterion)
+
 
 def rotate_iou_gpu_eval(boxes, query_boxes, criterion=-1, device_id=0):
-    """rotated box iou running in gpu. 500x faster than cpu version
-    (take 5ms in one example with numba.cuda code).
-    convert from [this project](
-        https://github.com/hongzhenwang/RRPN-revise/tree/master/pcdet/rotation).
-    
+    """Rotated box iou running in gpu. 500x faster than cpu version (take 5ms
+    in one example with numba.cuda code). convert from [this project](
+    https://github.com/hongzhenwang/RRPN-revise/tree/master/lib/rotation).
+
     Args:
-        boxes (float tensor: [N, 5]): rbboxes. format: centers, dims, 
-            angles(clockwise when positive)
-        query_boxes (float tensor: [K, 5]): [description]
-        device_id (int, optional): Defaults to 0. [description]
-    
+        boxes (torch.Tensor): rbboxes. format: centers, dims,
+            angles(clockwise when positive) with the shape of [N, 5].
+        query_boxes (float tensor: [K, 5]): rbboxes to compute iou with boxes.
+        device_id (int, optional): Defaults to 0. Device to use.
+        criterion (int, optional): Indicate different type of iou.
+            -1 indicate `area_inter / (area1 + area2 - area_inter)`,
+            0 indicate `area_inter / area1`,
+            1 indicate `area_inter / area2`.
+
     Returns:
-        [type]: [description]
+        np.ndarray: IoU results.
     """
-    box_dtype = boxes.dtype
     boxes = boxes.astype(np.float32)
     query_boxes = query_boxes.astype(np.float32)
     N = boxes.shape[0]
@@ -321,13 +365,14 @@ def rotate_iou_gpu_eval(boxes, query_boxes, criterion=-1, device_id=0):
     threadsPerBlock = 8 * 8
     cuda.select_device(device_id)
     blockspergrid = (div_up(N, threadsPerBlock), div_up(K, threadsPerBlock))
-    
+
     stream = cuda.stream()
     with stream.auto_synchronize():
         boxes_dev = cuda.to_device(boxes.reshape([-1]), stream)
         query_boxes_dev = cuda.to_device(query_boxes.reshape([-1]), stream)
         iou_dev = cuda.to_device(iou.reshape([-1]), stream)
-        rotate_iou_kernel_eval[blockspergrid, threadsPerBlock, stream](
-            N, K, boxes_dev, query_boxes_dev, iou_dev, criterion)
+        rotate_iou_kernel_eval[blockspergrid, threadsPerBlock,
+                               stream](N, K, boxes_dev, query_boxes_dev,
+                                       iou_dev, criterion)
         iou_dev.copy_to_host(iou.reshape([-1]), stream=stream)
     return iou.astype(boxes.dtype)

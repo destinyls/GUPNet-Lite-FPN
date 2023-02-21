@@ -4,4 +4,6 @@ __pycache__/
 code/log/
 *.pyc
 *.out
-../datasets/KITTI
+code/checkpoints/
+datasets/KITTI
+

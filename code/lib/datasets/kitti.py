@@ -80,7 +80,7 @@ class KITTI(data.Dataset):
         self.downsample = 4
         
     def get_image(self, idx):
-        img_file = os.path.join(self.image_dir, '%06d.png' % idx)
+        img_file = os.path.join(self.image_dir, '%06d.jpg' % idx)
         assert os.path.exists(img_file)
         return Image.open(img_file)    # (H, W, 3) RGB mode
 
