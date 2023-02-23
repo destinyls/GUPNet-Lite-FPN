@@ -28,8 +28,8 @@ class KITTI(data.Dataset):
         self.class_name = cfg['writelist']
         self.sensor_dict = cfg['sensor_dict']
         self.sensor_list = list()
-        for sensor, idx in enumerate(self.sensor_dict):
-            self.sensor_list.append(idx)
+        for key in self.sensor_dict.keys():
+            self.sensor_list.append(int(self.sensor_dict[key]))
 
         self.cls2id = dict()
         for idx in range(len(self.class_name)):

@@ -38,11 +38,12 @@ def main():
     for ckpt in os.listdir(cfg['tester']['output_dir']):
         if ".pth" not in ckpt:
             continue
+        iteration = int(ckpt.split('_')[2].split('.')[0])
         ckpt = os.path.join(output_dir, ckpt)
         model_state = torch.load(ckpt)["model_state"]
         model.load_state_dict(model_state)
         tester = Tester(cfg['tester'], model, val_loader, logger)
-        mAP_3d_moderate = tester.test()
+        mAP_3d_moderate = tester.test(iteration)
         if mAP_3d_moderate > best_mAP:
             best_mAP = mAP_3d_moderate
             shutil.copyfile(ckpt, os.path.join(output_dir, "best_checkpoints.pth"))

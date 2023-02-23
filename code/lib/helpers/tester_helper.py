@@ -32,7 +32,7 @@ class Tester(object):
         self.model.to(self.device)
 
 
-    def test(self):
+    def test(self, iteration=0):
         torch.set_grad_enabled(False)
         self.model.eval()
 
@@ -69,19 +69,18 @@ class Tester(object):
         evaluation_path = self.cfg['output_dir']
         pred_label_path = os.path.join(self.cfg['output_dir'], 'data')
         gt_label_path = os.path.join(self.data_loader.dataset.root_dir, "KITTI/training/label_2/")
-        print("pred_label_path: ", pred_label_path)
         self.save_results(results, output_dir=pred_label_path)
         if not os.path.exists(evaluation_path):
             os.makedirs(evaluation_path)
         pred_annos, image_ids = kitti.get_label_annos(pred_label_path, return_ids=True)
         gt_annos = kitti.get_label_annos(gt_label_path, image_ids=image_ids)
         result, ret_dict = kitti_eval(gt_annos, pred_annos, ["Car", "Pedestrian", "Cyclist"])
-        print(result)
         if ret_dict is not None:
             mAP_3d_moderate = ret_dict["KITTI/Car_3D_moderate_strict"]
-            with open(os.path.join(evaluation_path, 'epoch_result_{}.txt'.format(round(mAP_3d_moderate, 2))), "w") as f:
+            with open(os.path.join(evaluation_path, 'epoch_result_{:07d}_{}.txt'.format(iteration, round(mAP_3d_moderate, 2))), "w") as f:
                 f.write(result)
         print(result)
+        return mAP_3d_moderate
 
     def save_results(self, results, output_dir='./outputs'):
         os.makedirs(output_dir, exist_ok=True)
