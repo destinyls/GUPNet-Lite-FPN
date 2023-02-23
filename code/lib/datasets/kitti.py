@@ -55,7 +55,12 @@ class KITTI(data.Dataset):
         assert split in ['train', 'val', 'trainval', 'test']
         self.split = split
         split_dir = os.path.join(root_dir, 'KITTI', 'ImageSets', split + '.txt')
-        self.idx_list = [x.strip() for x in open(split_dir).readlines()]
+
+        self.idx_list = list()
+        for x in open(split_dir).readlines():
+            x = x.strip()
+            if int(x) % 6 == 0:
+                 self.idx_list.append(x)
 
         # path configuration
         self.root_dir = root_dir
