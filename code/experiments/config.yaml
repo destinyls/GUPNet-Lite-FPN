@@ -13,15 +13,15 @@ dataset:
 
   # writelist: ['Car','Pedestrian','Cyclist']
   max_objs: 100
-  random_flip: 0.0
-  random_crop: 0.0
+  random_flip: 0.5
+  random_crop: 0.5
   scale: 0.4
   shift: 0.1
 
 model:
   type: 'gupnet'
   backbone: 'dla34'
-  neck: 'DLAUp'
+  neck: 'DLAUpv2'
 
 optimizer:
   type: 'adam'
@@ -30,7 +30,7 @@ optimizer:
 
 lr_scheduler:
   warmup: True  # 5 epoches, cosine warmup, init_lir=0.00001 in default
-  init_lir: 0.00001
+  init_lir: 0.001
   decay_rate: 0.1
   decay_list: [90, 120]
 
