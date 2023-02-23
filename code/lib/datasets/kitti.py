@@ -26,6 +26,11 @@ class KITTI(data.Dataset):
         # self.cls2id = {'Pedestrian':0, 'Car':1, 'Cyclist':2, 'Truck':3, 'Bus':4, 'Construction_Vehicle':5, 'Motorcycle':6, 'Traffic_Cone':7, 'Barrier':8, 'Trailer':9}
         self.writelist = cfg['writelist']
         self.class_name = cfg['writelist']
+        self.sensor_dict = cfg['sensor_dict']
+        self.sensor_list = list()
+        for sensor, idx in enumerate(self.sensor_dict):
+            self.sensor_list.append(idx)
+
         self.cls2id = dict()
         for idx in range(len(self.class_name)):
             self.cls2id[self.class_name[idx]] = idx
@@ -55,7 +60,12 @@ class KITTI(data.Dataset):
         assert split in ['train', 'val', 'trainval', 'test']
         self.split = split
         split_dir = os.path.join(root_dir, 'KITTI', 'ImageSets', split + '.txt')
-        self.idx_list = [x.strip() for x in open(split_dir).readlines()] * 2
+
+        self.idx_list = list()
+        for x in open(split_dir).readlines():
+            x = x.strip()
+            if int(x) % 6 in self.sensor_list:
+                 self.idx_list.append(x)
 
         # path configuration
         self.root_dir = root_dir

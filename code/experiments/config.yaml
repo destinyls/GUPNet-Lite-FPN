@@ -8,6 +8,8 @@ dataset:
   use_dontcare: False
   use_3d_center: True
   writelist: ['Car','Pedestrian','Cyclist', 'Truck', 'Bus', 'Construction_Vehicle', 'Motorcycle', 'Traffic_Cone', 'Barrier', 'Trailer']
+  sensor_dict: {'CAM_FRONT' : 0, 'CAM_BACK' : 1, 'CAM_FRONT_LEFT' : 2, 'CAM_BACK_LEFT' : 3, 'CAM_FRONT_RIGHT' : 4, 'CAM_BACK_RIGHT' : 5}
+
   # writelist: ['Car','Pedestrian','Cyclist']
   max_objs: 100
   random_flip: 0.0
