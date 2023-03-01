@@ -26,7 +26,7 @@ def build_dataloader(cfg):
                                  shuffle=False,
                                  pin_memory=True,
                                  drop_last=False)
-        test_set = KITTI(root_dir=cfg['root_dir'], split='test', cfg=cfg) 
+        test_set = KITTI(root_dir=cfg['root_dir'], split='val', cfg=cfg) 
         test_loader = DataLoader(dataset=test_set,
                                  batch_size=cfg['batch_size'],
                                  num_workers=16,

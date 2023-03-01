@@ -30,12 +30,14 @@ class KITTI(data.Dataset):
         for idx in range(len(self.class_name)):
             self.cls2id[self.class_name[idx]] = idx
         self.num_classes = len(self.class_name)
-        self.resolution = np.array([1280, 384])  # W * H
+        self.resolution = np.array([1600, 896])  # W * H
         self.use_3d_center = cfg['use_3d_center']
         if cfg['class_merging']:
             self.writelist.extend(['Van', 'Truck'])
         if cfg['use_dontcare']:
             self.writelist.extend(['DontCare'])
+
+        self.cam_name = 'CAM_FRONT'
 
         ##l,w,h
         self.cls_mean_size = np.array([[1.75238862    ,0.67497987   , 0.71859957   ],
@@ -59,8 +61,8 @@ class KITTI(data.Dataset):
         self.idx_list = list()
         for x in open(split_dir).readlines():
             x = x.strip()
-            if int(x) % 6 == 0:
-                 self.idx_list.append(x)
+            # if int(x) % 6 == 0:
+            self.idx_list.append(x)
 
         # path configuration
         self.root_dir = root_dir
@@ -85,18 +87,18 @@ class KITTI(data.Dataset):
         self.downsample = 4
         
     def get_image(self, idx):
-        img_file = os.path.join(self.image_dir, '%06d.png' % idx)
+        img_file = os.path.join(self.image_dir, idx + '.jpg')
         assert os.path.exists(img_file)
         return Image.open(img_file)    # (H, W, 3) RGB mode
 
 
     def get_label(self, idx):
-        label_file = os.path.join(self.label_dir, '%06d.txt' % idx)
+        label_file = os.path.join(self.label_dir, idx + '.txt')
         assert os.path.exists(label_file)
         return get_objects_from_label(label_file)
 
     def get_calib(self, idx):
-        calib_file = os.path.join(self.calib_dir, '%06d.txt' % idx)
+        calib_file = os.path.join(self.calib_dir, idx + '.txt')
         assert os.path.exists(calib_file)
         return Calibration(calib_file)
 
@@ -106,7 +108,7 @@ class KITTI(data.Dataset):
 
     def __getitem__(self, item):
         #  ============================   get inputs   ===========================
-        index = int(self.idx_list[item])  # index mapping, get real data id
+        index = self.idx_list[item] # index mapping, get real data id
         # image loading
         img = self.get_image(index)
         img_size = np.array(img.size)
