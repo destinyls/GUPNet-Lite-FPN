@@ -3,7 +3,7 @@ random_seed: 444
 dataset:
   type: 'kitti'
   root_dir: '/root/GUPNet-Lite-FPN/datasets'
-  batch_size: 32
+  batch_size: 8
   class_merging: False
   use_dontcare: False
   use_3d_center: True
@@ -31,7 +31,7 @@ lr_scheduler:
   decay_list: [90, 120]
 
 trainer:
-  max_epoch: 100
+  max_epoch: 140
   eval_frequency: 200 # evaluation interval (in epoch)
   save_frequency: 10 # checkpoint save interval (in epoch)
   disp_frequency: 5 # display interval (in batch)

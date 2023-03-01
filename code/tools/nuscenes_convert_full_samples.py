@@ -14,8 +14,8 @@ from tqdm import tqdm
 from nuscenes.utils import splits
 
 start_index = 0
-data_root = '/home/tsing-adept/datasets/nuScenes/'
-output_root = '/home/yanglei/Datasets/nuscenes-mini-kitti'
+data_root = '/root/Dataset/nuscenes-mini/'
+output_root = '/root/Dataset/nuscenes-mini-kitti/'
 img_output_root = os.path.join(output_root, 'training/image_2/')
 label_output_root = os.path.join(output_root, 'training/label_2/')
 # label_output_root = os.path.join(output_root, 'training/label_2_attrs/')
@@ -199,8 +199,8 @@ def label_generation(output_label_file, box_list):
                     output_f.write(line)
 
 if __name__ == '__main__':
-    # sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
-    sensor_list = ['CAM_FRONT']
+    sensor_list = ['CAM_FRONT', 'CAM_BACK', 'CAM_FRONT_LEFT', 'CAM_BACK_LEFT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT']
+    # sensor_list = ['CAM_FRONT']
     version = 'v1.0-mini'
     available_vers = ['v1.0-trainval', 'v1.0-test', 'v1.0-mini']
     nusc = NuScenes(version=version, dataroot=data_root, verbose=True)
@@ -286,7 +286,6 @@ if __name__ == '__main__':
                 # print('copying', sensor_data['filename'], 'to', seqname + '.jpg')
                 os.system(cmd)
                 frame_counter += 1
-            
 
     with open(os.path.join(output_root, 'sample_token.json'), 'w') as f:
         json.dump(token_dict, f)

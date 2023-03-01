@@ -51,7 +51,7 @@ class Tester(object):
 
             # get corresponding calibs & transform tensor to numpy
             calibs = [self.data_loader.dataset.get_calib(index)  for index in info['img_id']]
-            info = {key: val.detach().cpu().numpy() for key, val in info.items()}
+            info = {key: val.detach().cpu().numpy() if not isinstance(val, list) else val for key, val in info.items()}
             cls_mean_size = self.data_loader.dataset.cls_mean_size
             dets = decode_detections(dets = dets,
                                      info = info,
@@ -85,7 +85,7 @@ class Tester(object):
     def save_results(self, results, output_dir='./outputs'):
         os.makedirs(output_dir, exist_ok=True)
         for img_id in results.keys():
-            out_path = os.path.join(output_dir, '{:06d}.txt'.format(img_id))
+            out_path = os.path.join(output_dir, img_id + '.txt')
             f = open(out_path, 'w')
             if len(results[img_id]) == 0:
                 f.write('\n')
