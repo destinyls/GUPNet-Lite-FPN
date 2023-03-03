@@ -190,10 +190,11 @@ class DLAUpv2(nn.Module):
             ida = getattr(self, 'ida_{}'.format(i))
             layers[-i - 2:] = ida(layers[-i - 2:])
             outputs.insert(0, layers[-1])
+
+        up_8_level, up_16_level = outputs[-3], outputs[-2]
         outputs = self.final_fusion(outputs)
-        return outputs[-1]
-
-
+        # up_4_level, up_8_level, up_16_level
+        return [outputs[-1], up_8_level, up_16_level]
 
 
 # weight init for up-sample layers [tranposed conv2d]
@@ -230,5 +231,3 @@ if __name__ == '__main__':
     dlaup = DLAUp(in_channels_list=channels[start_level:], scales_list=scales)
     features_up = dlaup(features[start_level:])
     print('shape of upsampled feature maps', features_up.shape)
-
-

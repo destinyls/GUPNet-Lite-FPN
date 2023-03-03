@@ -7,8 +7,8 @@ dataset:
   class_merging: False
   use_dontcare: False
   use_3d_center: True
-  # writelist: ['Car','Pedestrian','Cyclist', 'Truck', 'Bus', 'Construction_Vehicle', 'Motorcycle', 'Traffic_Cone', 'Barrier', 'Trailer']
-  writelist: ['Car','Pedestrian','Cyclist']
+  writelist: ['Car','Pedestrian','Cyclist', 'Truck', 'Bus', 'Construction_Vehicle', 'Motorcycle', 'Traffic_Cone', 'Barrier', 'Trailer']
+  # writelist: ['Car','Pedestrian','Cyclist']
   max_objs: 50
   random_flip: 0.5
   random_crop: 0.5
@@ -18,7 +18,7 @@ dataset:
 model:
   type: 'gupnet'
   backbone: 'dla34'
-  neck: 'DLAUp'
+  neck: 'DLAUpv2'
 
 optimizer:
   type: 'adam'
